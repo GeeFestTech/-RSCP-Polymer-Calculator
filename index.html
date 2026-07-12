@@ -747,11 +747,8 @@
     }
 
     function calculate() {
-        const polyName = document.getElementById('polymer-select').value; 
-        if (!polyName) return;
-        const polyData = recipesDatabase[polyName];
-        const meString = document.getElementById('me-modifier').value;
-        const me = parseFloat(meString) || 150; 
+        const polyName = document.getElementById('polymer-select').value; if (!polyName) return;
+        const polyData = recipesDatabase[polyName]; const meString = document.getElementById('me-modifier').value; const me = parseFloat(meString) || 150; 
         const bpCount = parseInt(document.getElementById('bp-count').value) || 0;
         const sellPrice = parseFloat(document.getElementById('sell-price').value) || 0; const bpCost = parseFloat(document.getElementById('bp-cost').value) || 0; const btnCost = parseFloat(document.getElementById('btn-cost').value) || 0;
         const prices = getSavedPrices(); const strategy = getSavedStrategy();
@@ -763,14 +760,17 @@
 
         for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
             let totalAmountRequired = 0;
+            
             slots.forEach(bpInSlot => { 
-                totalAmountRequired += Math.ceil((baseAmount * (me / 150)) * bpInSlot); 
+                const rawTotal = (baseAmount * (me / 150)) * bpInSlot;
+                // Убиваем системные микро-хвостики JS округлением до 4 знаков
+                const cleanedTotal = Math.round(rawTotal * 10000) / 10000;
+                // И только потом делаем игровой Math.ceil()
+                totalAmountRequired += Math.ceil(cleanedTotal); 
             });
             
-            const amountPerBPWithME = baseAmount * (me / 150);
-            const isSelfMined = strategy[matName] === "self";
-            const matPrice = isSelfMined ? 0 : (prices[matName] || 0);
-            const totalMatCost = totalAmountRequired * matPrice;
+            const amountPerBPWithME = baseAmount * (me / 150); const isSelfMined = strategy[matName] === "self";
+            const matPrice = isSelfMined ? 0 : (prices[matName] || 0); const totalMatCost = totalAmountRequired * matPrice;
             totalMaterialsCost += totalMatCost;
             
             const badge = isSelfMined 
@@ -787,8 +787,7 @@
                 </tr>`;
         }
 
-        const totalButtonsCost = btnCost * bpCount;
-        const totalFixedCost = (bpCost + btnCost) * bpCount; const finalCost = totalMaterialsCost + totalFixedCost;
+        const totalButtonsCost = btnCost * bpCount; const totalFixedCost = (bpCost + btnCost) * bpCount; const finalCost = totalMaterialsCost + totalFixedCost;
         const totalItemsProduced = 200 * bpCount; const totalRevenue = totalItemsProduced * sellPrice; const netProfit = totalRevenue - finalCost;
 
         document.getElementById('total-produced').innerText = totalItemsProduced.toLocaleString() + " шт";
@@ -801,29 +800,50 @@
 
     function calculateAnalytics() {
         const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
-        const meString = document.getElementById('me-modifier').value;
-        const me = parseFloat(meString) || 150;
+        const meString = document.getElementById('me-modifier').value; const me = parseFloat(meString) || 150;
+        const bpCount = parseInt(document.getElementById('analytics-bp-count').value) || 1;
+        
+        let remainingBPs = bpCount; const slots = [];
+        while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
+
         const analyticsList = [];
 
         for (const [polyName, polyData] of Object.entries(recipesDatabase)) {
             let materialsCost = 0;
             for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
-                const totalAmountRequired = Math.ceil(baseAmount * (me / 150));
+                let totalAmountRequired = 0;
+                slots.forEach(bpInSlot => { 
+                    const rawTotal = (baseAmount * (me / 150)) * bpInSlot;
+                    const cleanedTotal = Math.round(rawTotal * 10000) / 10000;
+                    totalAmountRequired += Math.ceil(cleanedTotal); 
+                });
                 const isSelfMined = strategy[matName] === "self";
                 materialsCost += totalAmountRequired * (isSelfMined ? 0 : (prices[matName] || 0));
             }
-            const fixedCost = bpSettings[polyName].bp_cost + bpSettings[polyName].btn_cost;
-            const totalCost = materialsCost + fixedCost;
+            
+            const totalFixedCost = (bpSettings[polyName].bp_cost + bpSettings[polyName].btn_cost) * bpCount;
+            const totalCost = materialsCost + totalFixedCost;
             const currentSellPrice = polyPrices[polyName] || polyData.market_price;
-            const revenue = 200 * currentSellPrice; const profit = revenue - totalCost;
-            analyticsList.push({ name: polyName, revenue: revenue, matsCost: materialsCost, fixedCost: fixedCost, totalCost: totalCost, profit: profit });
+            const totalItemsProduced = 200 * bpCount; const revenue = totalItemsProduced * currentSellPrice; const profit = revenue - totalCost;
+            
+            analyticsList.push({ name: polyName, produced: totalItemsProduced, revenue: revenue, matsCost: materialsCost, fixedCost: totalFixedCost, totalCost: totalCost, profit: profit });
         }
 
         analyticsList.sort((a, b) => b.profit - a.profit);
         const tbody = document.getElementById('analytics-table-body'); tbody.innerHTML = '';
+        
         analyticsList.forEach(item => {
             const profitClass = item.profit >= 0 ? "profit-pos" : "profit-neg";
-            tbody.innerHTML += `<tr><td><b>${item.name}</b></td><td>${item.revenue.toLocaleString()}</td><td>${Math.round(item.matsCost).toLocaleString()}</td><td>${item.fixedCost.toLocaleString()}</td><td>${Math.round(item.totalCost).toLocaleString()}</td><td class="${profitClass}" style="font-weight: bold;">${Math.round(item.profit).toLocaleString()} ISK</td></tr>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${item.name}</b></td>
+                    <td style="color: var(--text-muted);">${item.produced.toLocaleString()}</td>
+                    <td>${Math.round(item.revenue).toLocaleString()}</td>
+                    <td>${Math.round(item.matsCost).toLocaleString()}</td>
+                    <td>${item.fixedCost.toLocaleString()}</td>
+                    <td>${Math.round(item.totalCost).toLocaleString()}</td>
+                    <td class="${profitClass}" style="font-weight: bold; font-size: 15px;">${Math.round(item.profit).toLocaleString()} ISK</td>
+                </tr>`;
         });
     }
 
