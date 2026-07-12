@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE Echoes: Полимерный Производственного Комплекс</title>
+    <!-- Подключаем альтернативный бесплатный космический шрифт на случай, если Shentox не установлен -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Подключаем твой локальный файл шрифта принудительно */
+        @font-face {
+            font-family: 'Shentox Game';
+            /* Если расширение .otf, замени ниже ttf на otf */
+            src: url('Shentox-Regular.ttf') format('truetype'); 
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --bg-color: #06090d;
+            --card-bg: #0c1118;
+            --card-header-bg: #121b26;
+            --border-color: #1a2533;
+            --text-main: #cbd5e1;
+            --text-muted: #64748b;
+            --accent-color: #00e5ff;
+            --accent-green: #00e676;
+            --accent-red: #ff3d00;
+            --tab-bg: #090e14;
+        }
+
+        body {
+            /* Теперь принудительно отдаем приоритет нашему 'Shentox Game' */
+            font-family: 'Shentox Game', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* НАВИГАЦИЯ В СТИЛЕ EVE */
+        .tabs-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            background-color: var(--tab-bg);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background-color: #101721;
+        }
+
+        .tab-btn.active {
+            background-color: var(--card-header-bg);
+            color: var(--accent-color);
+            border-top: 2px solid var(--accent-color);
+            border-bottom: 1px solid var(--card-header-bg);
+            margin-bottom: -5px;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .grid-market, .grid-blueprints {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .grid-blueprints { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+
+        .bp-edit-card {
+            background: #090e14;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .bp-edit-card h3 { border: none; padding: 0; margin-bottom: 10px; }
+
+        .form-group { margin-bottom: 15px; }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            background-color: #040609;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px 12px;
+            box-sizing: border-box;
+            font-size: 14px;
+            font-family: inherit; /* Чтобы инпуты тоже брали Shentox */
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        input[readonly] {
+            background-color: #0b1118;
+            color: var(--accent-green);
+            font-weight: bold;
+            cursor: not-allowed;
+            border-left: 2px solid var(--accent-green);
+        }
+
+        /* ИНТЕРФЕЙС КУБИКОВ НАВЫКОВ (КАК В EVE) */
+        .skill-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #090e14;
+            border: 1px solid var(--border-color);
+            margin-bottom: 8px;
+        }
+        
+        .skill-name-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .skill-icon-placeholder {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--text-muted);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #101720;
+        }
+
+        .skill-icon-placeholder::before {
+            content: "🏭";
+            font-size: 16px;
+        }
+
+        .skill-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .cube-container {
+            display: flex;
+            gap: 4px;
+        }
+
+        .skill-cube {
+            width: 12px;
+            height: 12px;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .skill-cube:hover {
+            background-color: #475569;
+        }
+
+        .skill-cube.active {
+            background-color: var(--accent-color);
+            border-color: #00b8cc;
+            box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+        }
+
+        /* ТАБЛИЦЫ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #080c12;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--card-header-bg);
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .resource-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 0;
+        }
+
+        .resource-row label { margin-bottom: 0; text-transform: none; font-size: 14px; color: var(--text-main); }
+        .resource-row input { width: 120px; padding: 4px 8px; text-align: right; }
+
+        .strategy-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #090e14;
+            border: 1px solid var(--border-color);
+            margin-bottom: 6px;
+        }
+
+        /* ТУМБЛЕРЫ */
+        .toggle-switch { position: relative; display: inline-block; width: 150px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #1e293b; transition: .2s;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; font-size: 10px; font-weight: bold; color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 22px; width: 70px; left: 3px; bottom: 3px;
+            background-color: #06090d; transition: .2s; border: 1px solid #475569; z-index: 1;
+        }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(72px); border-color: var(--accent-green); }
+        .toggle-switch input:checked + .toggle-slider { background-color: #061f14; }
+        .toggle-label-left, .toggle-label-right { position: relative; z-index: 2; width: 50%; text-align: center; }
+        .toggle-switch input:not(:checked) + .toggle-slider .toggle-label-left { color: var(--accent-color); }
+        .toggle-switch input:checked + .toggle-slider .toggle-label-right { color: var(--accent-green); }
+
+        .accordion-trigger {
+            background-color: var(--card-header-bg);
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .accordion-content { display: none; padding: 15px; background-color: #040609; border: 1px solid var(--border-color); margin-bottom: 20px; }
+        .accordion-content.open { display: block; }
+
+        .result-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #040609; padding: 15px; border-left: 3px solid var(--accent-color); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .stat-card.profit { border-left-color: var(--accent-green); }
+        .stat-val { font-size: 20px; font-weight: bold; color: #fff; margin-top: 5px; }
+        .profit-pos { color: var(--accent-green) !important; }
+        .profit-neg { color: var(--accent-red) !important; }
+
+        .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
+        .btn-reset { background-color: #0f172a; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 16px; cursor: pointer; font-size: 13px; }
+        .btn-reset:hover { border-color: var(--accent-red); color: #fff; }
+        .self-mined-badge { background: #061f14; color: var(--accent-green); padding: 2px 6px; border: 1px solid #00e676; font-size: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 style="margin-bottom: 20px; color: var(--accent-color);">EVE Echoes: Полимерный Производственный Комплекс</h1>
+    
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('market-tab')">Рынок цен</button>
+        <button class="tab-btn" onclick="switchTab('strategy-tab')">Стратегия добычи</button>
+        <button class="tab-btn" onclick="switchTab('blueprints-tab')">Настройки чертежей</button>
+        <button class="tab-btn" onclick="switchTab('pe-tab')">Навыки и Эффективность (ME)</button>
+        <button class="tab-btn" onclick="switchTab('calculator-tab')">Калькулятор</button>
+        <button class="tab-btn" onclick="switchTab('analytics-tab')">Анализ эффективности</button>
+    </div>
+
+    <!-- ТАБ: РЫНОК ЦЕН -->
+    <div id="market-tab" class="tab-content active">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Цены сырья и материалов (Ручной ввод, ISK)</h2>
+                <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
+            </div>
+            <div id="market-resources-container" class="grid-market"></div>
+
+            <h2>Цены продажи готовых полимеров (ISK за 1 шт)</h2>
+            <div id="market-polymers-container" class="grid-market"></div>
+        </div>
+    </div>
+
+    <!-- ТАБ: СТРАТЕГИЯ ДОБЫЧИ -->
+    <div id="strategy-tab" class="tab-content">
+        <div class="card">
+            <h2>Настройка источников сырья</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                Ресурсы со статусом <b>«Добуду сам»</b> будут учитываться по цене <b>0 ISK</b>.
+            </p>
+            <div id="strategy-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- ТАБ: НАСТРОЙКИ ЧЕРТЕЖЕЙ -->
+    <div id="blueprints-tab" class="tab-content">
+        <div class="card">
+            <h2>Базовые косты чертежей (ISK на 1 БП)</h2>
+            <div id="blueprints-grid-container" class="grid-blueprints"></div>
+        </div>
+    </div>
+
+    <!-- ТАБ: НАСТРОЙКА КУБИКОВ НАВЫКОВ -->
+    <div id="pe-tab" class="tab-content">
+        <div class="card">
+            <h2>Промышленные навыки персонажа</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                Кликай по кубикам, чтобы задать уровень навыка, прямо как в интерфейсе EVE Echoes. Расчет идет вниз от базовых 150%.
+            </p>
+            
+            <div id="skills-interactive-container">
+                <!-- Обычный навык -->
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(6% за ур., макс +30%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-basic" data-step="6">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
+                </div>
+                <!-- Продвинутый навык -->
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Advanced Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(4% за ур., макс +20%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-advanced" data-step="4">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
+                </div>
+                <!-- Экспертный навык -->
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Expert Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(1% за ур., макс +5%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-expert" data-step="1">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 25px;">Модификаторы структуры</h3>
+            <div class="form-group" style="max-width: 400px;">
+                <label>Снижение материалоемкости на заводе станции (%)</label>
+                <input type="number" id="station-bonus" value="11" min="0" max="50" oninput="calculateMEModifier()">
+            </div>
+
+            <div class="stat-card" style="margin-top: 20px; border-left-color: var(--accent-color); background: #040609;">
+                <div>Итоговая эффективность материалов (Material Efficiency):</div>
+                <div class="stat-val" id="calculated-me-display" style="color: var(--accent-color);">139%</div>
+                <p style="color: var(--text-muted); font-size: 11px; margin: 5px 0 0 0;">Текущий игровой лимит: не ниже 75%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ТАБ: КАЛЬКУЛЯТОР -->
+    <div id="calculator-tab" class="tab-content">
+        <div class="accordion-trigger" onclick="toggleAccordion()">
+            <span>⚙️ Быстрый просмотр/правка цен материалов (развернуть)</span>
+            <span id="accordion-arrow">▼</span>
+        </div>
+        <div id="calculator-prices-accordion" class="accordion-content">
+            <div id="accordion-prices-grid" class="grid-market"></div>
+        </div>
+
+        <div class="card">
+            <h2>Параметры текущего производства</h2>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="polymer-select">Выберите полимер</label>
+                    <select id="polymer-select"></select>
+                </div>
+                <div class="form-group">
+                    <label for="me-modifier">Активная Material Efficiency (Из настроек ME)</label>
+                    <input type="text" id="me-modifier" value="139%" readonly>
+                </div>
+            </div>
+
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="bp-count">Количество чертежей в пакете (1 БП = 200 шт.)</label>
+                    <input type="number" id="bp-count" value="20" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="sell-price">Цена продажи готового полимера (1 шт., ISK)</label>
+                    <input type="number" id="sell-price" value="0">
+                </div>
+            </div>
+
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="bp-cost">Себестоимость чертежа (1 БП, ISK)</label>
+                    <input type="number" id="bp-cost" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="btn-cost">Цена запуска (Кнопка, ISK)</label>
+                    <input type="number" id="btn-cost" value="0">
+                </div>
+            </div>
+
+            <h2>Итоги расчета</h2>
+            <div class="result-box">
+                <div class="stat-card">
+                    <div>Общий объем продукции</div>
+                    <div class="stat-val" id="total-produced">0 шт</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #ff9100;">
+                    <div>Общая цена кнопок</div>
+                    <div class="stat-val" id="total-buttons-cost" style="color: #ff9100;">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Общие косты сырья</div>
+                    <div class="stat-val" id="total-cost">0 ISK</div>
+                </div>
+                <div class="stat-card profit">
+                    <div>Чистая прибыль</div>
+                    <div class="stat-val" id="net-profit">0 ISK</div>
+                </div>
+            </div>
+
+            <h2>Рецептурные требования на пачку</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Материал рецепта</th>
+                        <th>База чертежа (150% ME)</th>
+                        <th>Расход на 1 БП дробный</th>
+                        <th>Всего на пачку (с округлением слота)</th>
+                        <th>Итоговая стоимость (ISK)</th>
+                    </tr>
+                </thead>
+                <tbody id="resources-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ТАБ: АНАЛИТИКА -->
+    <div id="analytics-tab" class="tab-content">
+
+        <div class="card">
+            <h2>Рейтинг эффективности полимеров</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                Сравнение маржинальности полимеров на основе 1 чертежа (200 шт.) при текущей конфигурации кубиков ME.
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Полимер</th>
+                        <th>Выручка (200 шт)</th>
+                        <th>Косты сырья</th>
+                        <th>Фикс. Косты (БП+Кнопка)</th>
+                        <th>Всего расходов</th>
+                        <th>Чистая прибыль</th>
+                    </tr>
+                </thead>
+                <tbody id="analytics-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultPrices = {
+        "Reactive Gas": 135, "Condensates": 234, "Noble Gas": 190, "Supertensile Plastics": 640,
+        "Industrial Fibers": 1394, "Silicate Glass": 697, "PolyAramids": 220, "Oxygen Isotopes": 3797,
+        "Tritanium": 1, "Pyerite": 3.5, "Mexallon": 5, "Isogen": 139, "Nocxium": 566, "Zydrine": 2515, "Megacyte": 618,
+        "Fullerite-C50": 470, "Fullerite-C60": 890, "Fullerite-C70": 1087, "Gray Moon Ore": 1300,
+        "Brown Moon Ore": 1050, "Black Moon Ore": 850, "Motley Moon Ore": 2699, "Pink Star Crystal": 6000,
+        "Purple Star Crystal": 2485, "Blue Star Crystal": 3895, "Chromatic Star Crystal": 13999
+    };
+
+    const recipesDatabase = {
+      "Fullerides": { "market_price": 50900, "bp_cost": 300000, "btn_cost": 600000, "materials": { "Noble Gas": 450, "Pyerite": 30000, "Mexallon": 30000, "Isogen": 6745, "Fullerite-C50": 4500, "Fullerite-C60": 3000, "Fullerite-C70": 225, "Motley Moon Ore": 30, "Chromatic Star Crystal": 8 } },
+      "Titanium Carbide": { "market_price": 56000, "bp_cost": 600000, "btn_cost": 1200000, "materials": { "Tritanium": 375000, "Nocxium": 4500, "Megacyte": 450, "Fullerite-C50": 6000, "Gray Moon Ore": 225, "Motley Moon Ore": 30, "Purple Star Crystal": 15, "Blue Star Crystal": 8, "Chromatic Star Crystal": 15 } },
+      "Crystalline Carbonide": { "market_price": 74990, "bp_cost": 500000, "btn_cost": 1000000, "materials": { "PolyAramids": 600, "Tritanium": 375000, "Zydrine": 900, "Fullerite-C60": 7500, "Gray Moon Ore": 300, "Brown Moon Ore": 150, "Black Moon Ore": 75, "Motley Moon Ore": 38 } },
+      "Nanotransistors": { "market_price": 38738, "bp_cost": 240000, "btn_cost": 480000, "materials": { "Pyerite": 3000, "Mexallon": 750, "Fullerite-C50": 3000, "Pink Star Crystal": 120, "Purple Star Crystal": 30, "Blue Star Crystal": 15 } },
+      "PPD Fullerene Fiber": { "market_price": 29500, "bp_cost": 240000, "btn_cost": 25000, "materials": { "Oxygen Isotopes": 1200, "Pyerite": 750, "Fullerite-C50": 450, "Fullerite-C60": 150 } },
+      "Fullero-Ferrocene": { "market_price": 20000, "bp_cost": 200000, "btn_cost": 25000, "materials": { "Reactive Gas": 600, "Tritanium": 1200, "Mexallon": 1200, "Fullerite-C50": 300, "Fullerite-C60": 450, "Fullerite-C70": 900 } },
+      "Fullerene Intercalated": { "market_price": 47500, "bp_cost": 480000, "btn_cost": 25000, "materials": { "Noble Gas": 600, "Isogen": 3600, "Zydrine": 3600, "Fullerite-C60": 600, "Fullerite-C70": 1800 } },
+      "Phenolic Composites": { "market_price": 49000, "bp_cost": 720000, "btn_cost": 1440000, "materials": { "Supertensile Plastics": 450, "Pyerite": 45000, "Nocxium": 4500, "Fullerite-C60": 2250, "Brown Moon Ore": 300, "Pink Star Crystal": 150, "Purple Star Crystal": 75, "Blue Star Crystal": 38 } },
+      "Sylramic Fibers": { "market_price": 164900, "bp_cost": 2000000, "btn_cost": 4000000, "materials": { "Industrial Fibers": 1200, "Silicate Glass": 1200, "Pyerite": 30000, "Isogen": 15000, "Zydrine": 7500, "Fullerite-C50": 12000, "Pink Star Crystal": 300, "Purple Star Crystal": 150, "Blue Star Crystal": 75, "Chromatic Star Crystal": 38 } },
+      "Reinforced Carbon Fiber": { "market_price": 84999, "bp_cost": 1280000, "btn_cost": 2560000, "materials": { "Supertensile Plastics": 450, "Industrial Fibers": 540, "PolyAramids": 450, "Isogen": 7200, "Zydrine": 5400, "Fullerite-C60": 5400, "Gray Moon Ore": 900, "Brown Moon Ore": 450, "Black Moon Ore": 225, "Motley Moon Ore": 113 } },
+      "Ferrogel": { "market_price": 65800, "bp_cost": 900000, "btn_cost": 1800000, "materials": { "Condensates": 360, "Noble Gas": 360, "Pyerite": 7500, "Mexallon": 7500, "Black Moon Ore": 263, "Motley Moon Ore": 113, "Purple Star Crystal": 60, "Blue Star Crystal": 45, "Chromatic Star Crystal": 23 } },
+      "Hexite": { "market_price": 68600, "bp_cost": 500000, "btn_cost": 1000000, "materials": { "Reactive Gas": 675, "Condensates": 450, "Fullerite-C50": 6000, "Fullerite-C60": 2250, "Fullerite-C70": 450, "Gray Moon Ore": 600, "Brown Moon Ore": 300, "Black Moon Ore": 150 } }
+    };
+
+    let currentSkills = { basic: 0, advanced: 0, expert: 0 };
+
+    function getSavedPrices() { const saved = localStorage.getItem('eve_market_prices'); return saved ? JSON.parse(saved) : defaultPrices; }
+    function getSavedPolyPrices() { const saved = localStorage.getItem('eve_poly_prices'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = d.market_price; } return base; }
+    function getSavedStrategy() { const saved = localStorage.getItem('eve_mining_strategy'); if (saved) return JSON.parse(saved); const base = {}; for (const res of Object.keys(defaultPrices)) { base[res] = "buy"; } return base; }
+    function getSavedBPSettings() { const saved = localStorage.getItem('eve_bp_settings'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = { bp_cost: d.bp_cost, btn_cost: d.btn_cost }; } return base; }
+    
+    function getSavedMESettings() {
+        const saved = localStorage.getItem('eve_me_settings');
+        return saved ? JSON.parse(saved) : { basic: 0, advanced: 0, expert: 0, station: 11 };
+    }
+
+    function initApp() { 
+        initPolySelect();       // 1. Жёстко инициализируем список полимеров первым шагом!
+        renderMarketInputs();   // 2. Затем рендерим инпуты цен
+        renderStrategyList();   // 3. Стратегия добычи
+        renderBlueprintsGrid(); // 4. Косты чертежей
+        initInteractiveCubes(); // 5. И в самом конце безопасно запускаем кубики и ME расчет
+    }
+
+    function renderMarketInputs() {
+        const resContainer = document.getElementById('market-resources-container'); const polyContainer = document.getElementById('market-polymers-container'); const accGrid = document.getElementById('accordion-prices-grid');
+        resContainer.innerHTML = ''; polyContainer.innerHTML = ''; accGrid.innerHTML = '';
+        const resPrices = getSavedPrices(); const polyPrices = getSavedPolyPrices();
+
+        for (const [res, price] of Object.entries(resPrices)) {
+            const block = `<div class="resource-row"><label>${res}</label><input type="number" class="market-input" data-res="${res}" value="${price}" oninput="syncResourcePrice(this)"></div>`;
+            resContainer.innerHTML += block; accGrid.innerHTML += block;
+        }
+        for (const [polyName, price] of Object.entries(polyPrices)) {
+            polyContainer.innerHTML += `<div class="resource-row"><label><b>${polyName}</b></label><input type="number" class="poly-input" data-poly="${polyName}" value="${price}" oninput="syncPolyPrice(this)"></div>`;
+        }
+    }
+
+    function renderStrategyList() {
+        const container = document.getElementById('strategy-list-container'); container.innerHTML = ''; const strategy = getSavedStrategy();
+        for (const resName of Object.keys(defaultPrices)) {
+            const isChecked = strategy[resName] === "buy" ? "checked" : "";
+            container.innerHTML += `
+                <div class="strategy-row"><span><b>${resName}</b></span>
+                    <label class="toggle-switch"><input type="checkbox" data-res="${resName}" ${isChecked} onchange="syncStrategy(this)"><span class="toggle-slider"><span class="toggle-label-left">ДОБУДУ</span><span class="toggle-label-right">КУПЛЮ</span></span></label>
+                </div>`;
+        }
+    }
+
+    function renderBlueprintsGrid() {
+        const container = document.getElementById('blueprints-grid-container'); container.innerHTML = ''; const bpSettings = getSavedBPSettings();
+        for (const [polyName, config] of Object.entries(bpSettings)) {
+            container.innerHTML += `
+                <div class="bp-edit-card">
+                    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; color: var(--accent-color);">${polyName}</h3>
+                    <div class="form-group"><label>Цена чертежа (ISK)</label><input type="number" class="bp-cost-input" data-poly="${polyName}" value="${config.bp_cost}" oninput="syncBPConfig(this, 'bp_cost')"></div>
+                    <div class="form-group"><label>Цена запуска / Кнопка (ISK)</label><input type="number" class="bp-btn-input" data-poly="${polyName}" value="${config.btn_cost}" oninput="syncBPConfig(this, 'btn_cost')"></div>
+                </div>`;
+        }
+    }
+
+    function initInteractiveCubes() {
+        const settings = getSavedMESettings();
+        currentSkills.basic = parseInt(settings.basic);
+        if (isNaN(currentSkills.basic)) currentSkills.basic = 0;
+        
+        currentSkills.advanced = parseInt(settings.advanced);
+        if (isNaN(currentSkills.advanced)) currentSkills.advanced = 0;
+        
+        currentSkills.expert = parseInt(settings.expert);
+        if (isNaN(currentSkills.expert)) currentSkills.expert = 0;
+        
+        document.getElementById('station-bonus').value = settings.station !== undefined ? settings.station : 11;
+
+        renderCubeRow('cubes-basic', currentSkills.basic);
+        renderCubeRow('cubes-advanced', currentSkills.advanced);
+        renderCubeRow('cubes-expert', currentSkills.expert);
+
+        calculateMEModifier();
+    }
+
+    function renderCubeRow(containerId, activeLevel) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const cubes = container.querySelectorAll('.skill-cube');
+        const currentType = containerId.replace('cubes-', '');
+        
+        cubes.forEach(cube => {
+            const lvl = parseInt(cube.dataset.level);
+            if (lvl <= activeLevel) {
+                cube.classList.add('active');
+            } else {
+                cube.classList.remove('active');
+            }
+            
+            cube.onclick = function(e) {
+                e.stopPropagation();
+                let targetLvl = parseInt(this.dataset.level);
+                
+                if (currentSkills[currentType] === targetLvl) {
+                    targetLvl = targetLvl - 1;
+                }
+                
+                currentSkills[currentType] = targetLvl;
+                renderCubeRow(containerId, targetLvl);
+                calculateMEModifier();
+            };
+        });
+    }
+
+    function calculateMEModifier() {
+        const basicBonus = currentSkills.basic * 6;
+        const advancedBonus = currentSkills.advanced * 4;
+        const expertBonus = currentSkills.expert * 1;
+        const stationBonus = parseFloat(document.getElementById('station-bonus').value);
+        const finalStationBonus = isNaN(stationBonus) ? 0 : stationBonus;
+
+        let finalME = 150 - basicBonus - advancedBonus - expertBonus - finalStationBonus;
+        if (finalME < 75) finalME = 75;
+
+        document.getElementById('calculated-me-display').innerText = finalME + "%";
+        document.getElementById('me-modifier').value = finalME + "%";
+
+        localStorage.setItem('eve_me_settings', JSON.stringify({ 
+            basic: currentSkills.basic, 
+            advanced: currentSkills.advanced, 
+            expert: currentSkills.expert, 
+            station: finalStationBonus 
+        }));
+        
+        if (typeof calculate === "function") {
+            calculate();
+        }
+    }
+
+    function syncResourcePrice(el) {
+        const resName = el.dataset.res; const val = parseFloat(el.value) || 0;
+        document.querySelectorAll(`.market-input[data-res="${resName}"]`).forEach(input => { if (input !== el) input.value = val; });
+        const currentPrices = {};
+        document.querySelectorAll('#market-resources-container .market-input').forEach(input => { currentPrices[input.dataset.res] = parseFloat(input.value) || 0; });
+        localStorage.setItem('eve_market_prices', JSON.stringify(currentPrices));
+        calculate();
+    }
+
+    function syncPolyPrice(el) {
+        const polyName = el.dataset.poly; const val = parseFloat(el.value) || 0;
+        const currentPolyPrices = {};
+        document.querySelectorAll('.poly-input').forEach(input => { currentPolyPrices[input.dataset.poly] = parseFloat(input.value) || 0; });
+        localStorage.setItem('eve_poly_prices', JSON.stringify(currentPolyPrices));
+        if (document.getElementById('polymer-select').value === polyName) { document.getElementById('sell-price').value = val; }
+        calculate();
+    }
+
+    function syncStrategy(el) {
+        const resName = el.dataset.res; const currentStatus = el.checked ? "buy" : "self";
+        const strategy = getSavedStrategy(); strategy[resName] = currentStatus;
+        localStorage.setItem('eve_mining_strategy', JSON.stringify(strategy));
+        calculate();
+    }
+
+    function syncBPConfig(el, field) {
+        const polyName = el.dataset.poly; const val = parseFloat(el.value) || 0; const bpSettings = getSavedBPSettings();
+        bpSettings[polyName][field] = val; localStorage.setItem('eve_bp_settings', JSON.stringify(bpSettings));
+        if (document.getElementById('polymer-select').value === polyName) {
+            if (field === 'bp_cost') document.getElementById('bp-cost').value = val;
+            if (field === 'btn_cost') document.getElementById('btn-cost').value = val;
+        }
+        calculate();
+    }
+
+    function resetPrices() {
+        if (confirm("Сбросить все локальные изменения и вернуть чистые стартовые настройки?")) {
+            localStorage.clear();
+            initApp(); loadPolyData();
+        }
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active'); if(event) event.target.classList.add('active');
+        if (tabId === 'analytics-tab') calculateAnalytics();
+    }
+
+    function toggleAccordion() {
+        const content = document.getElementById('calculator-prices-accordion'); const arrow = document.getElementById('accordion-arrow');
+        content.classList.toggle('open'); arrow.innerText = content.classList.contains('open') ? '▲' : '▼';
+    }
+
+    function initPolySelect() {
+        const select = document.getElementById('polymer-select'); select.innerHTML = '';
+        for (const name of Object.keys(recipesDatabase)) { select.innerHTML += `<option value="${name}">${name}</option>`; }
+        select.addEventListener('change', loadPolyData);
+    }
+
+    function loadPolyData() {
+        const polyName = document.getElementById('polymer-select').value; const polyData = recipesDatabase[polyName]; const polyPrices = getSavedPolyPrices(); const bpSettings = getSavedBPSettings();
+        document.getElementById('sell-price').value = polyPrices[polyName] || polyData.market_price;
+        document.getElementById('bp-cost').value = bpSettings[polyName].bp_cost; document.getElementById('btn-cost').value = bpSettings[polyName].btn_cost;
+        calculate();
+    }
+
+    function calculate() {
+        const polyName = document.getElementById('polymer-select').value; 
+        if (!polyName) return;
+        const polyData = recipesDatabase[polyName];
+        const meString = document.getElementById('me-modifier').value;
+        const me = parseFloat(meString) || 150; 
+        const bpCount = parseInt(document.getElementById('bp-count').value) || 0;
+        const sellPrice = parseFloat(document.getElementById('sell-price').value) || 0; const bpCost = parseFloat(document.getElementById('bp-cost').value) || 0; const btnCost = parseFloat(document.getElementById('btn-cost').value) || 0;
+        const prices = getSavedPrices(); const strategy = getSavedStrategy();
+
+        let remainingBPs = bpCount; const slots = [];
+        while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
+
+        let totalMaterialsCost = 0; const tableBody = document.getElementById('resources-table-body'); tableBody.innerHTML = '';
+
+        for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
+            let totalAmountRequired = 0;
+            slots.forEach(bpInSlot => { 
+                totalAmountRequired += Math.ceil((baseAmount * (me / 150)) * bpInSlot); 
+            });
+            
+            const amountPerBPWithME = baseAmount * (me / 150);
+            const isSelfMined = strategy[matName] === "self";
+            const matPrice = isSelfMined ? 0 : (prices[matName] || 0);
+            const totalMatCost = totalAmountRequired * matPrice;
+            totalMaterialsCost += totalMatCost;
+            
+            const badge = isSelfMined 
+                ? `<span class="self-mined-badge">ДОБЫЧА</span>` 
+                : `<span class="self-mined-badge" style="background: #05141c; color: var(--accent-color); border: 1px solid var(--accent-color);">ПОКУПКА</span>`;
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td><b>${matName}</b> ${badge}</td>
+                    <td>${baseAmount.toLocaleString()}</td>
+                    <td style="color: var(--accent-color);">${amountPerBPWithME.toFixed(4)}</td>
+                    <td style="font-size: 15px; color: var(--accent-green); font-weight: bold;">${totalAmountRequired.toLocaleString()}</td>
+                    <td>${isSelfMined ? '<span style="color: var(--accent-green)">0 (Своё)</span>' : Math.round(totalMatCost).toLocaleString()}</td>
+                </tr>`;
+        }
+
+        const totalButtonsCost = btnCost * bpCount;
+        const totalFixedCost = (bpCost + btnCost) * bpCount; const finalCost = totalMaterialsCost + totalFixedCost;
+        const totalItemsProduced = 200 * bpCount; const totalRevenue = totalItemsProduced * sellPrice; const netProfit = totalRevenue - finalCost;
+
+        document.getElementById('total-produced').innerText = totalItemsProduced.toLocaleString() + " шт";
+        document.getElementById('total-buttons-cost').innerText = Math.round(totalButtonsCost).toLocaleString() + " ISK";
+        document.getElementById('total-cost').innerText = Math.round(totalMaterialsCost).toLocaleString() + " ISK";
+        
+        const profitEl = document.getElementById('net-profit'); profitEl.innerText = Math.round(netProfit).toLocaleString() + " ISK";
+        profitEl.className = netProfit >= 0 ? "stat-val profit-pos" : "stat-val profit-neg";
+    }
+
+    function calculateAnalytics() {
+        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
+        const meString = document.getElementById('me-modifier').value;
+        const me = parseFloat(meString) || 150;
+        const analyticsList = [];
+
+        for (const [polyName, polyData] of Object.entries(recipesDatabase)) {
+            let materialsCost = 0;
+            for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
+                const totalAmountRequired = Math.ceil(baseAmount * (me / 150));
+                const isSelfMined = strategy[matName] === "self";
+                materialsCost += totalAmountRequired * (isSelfMined ? 0 : (prices[matName] || 0));
+            }
+            const fixedCost = bpSettings[polyName].bp_cost + bpSettings[polyName].btn_cost;
+            const totalCost = materialsCost + fixedCost;
+            const currentSellPrice = polyPrices[polyName] || polyData.market_price;
+            const revenue = 200 * currentSellPrice; const profit = revenue - totalCost;
+            analyticsList.push({ name: polyName, revenue: revenue, matsCost: materialsCost, fixedCost: fixedCost, totalCost: totalCost, profit: profit });
+        }
+
+        analyticsList.sort((a, b) => b.profit - a.profit);
+        const tbody = document.getElementById('analytics-table-body'); tbody.innerHTML = '';
+        analyticsList.forEach(item => {
+            const profitClass = item.profit >= 0 ? "profit-pos" : "profit-neg";
+            tbody.innerHTML += `<tr><td><b>${item.name}</b></td><td>${item.revenue.toLocaleString()}</td><td>${Math.round(item.matsCost).toLocaleString()}</td><td>${item.fixedCost.toLocaleString()}</td><td>${Math.round(item.totalCost).toLocaleString()}</td><td class="${profitClass}" style="font-weight: bold;">${Math.round(item.profit).toLocaleString()} ISK</td></tr>`;
+        });
+    }
+
+    initApp(); loadPolyData();
+    document.getElementById('calculator-tab').addEventListener('input', calculate);
+</script>
+</body>
+</html>
