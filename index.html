@@ -746,7 +746,7 @@
         calculate();
     }
 
-    function calculate() {
+ function calculate() {
         const polyName = document.getElementById('polymer-select').value; if (!polyName) return;
         const polyData = recipesDatabase[polyName]; const meString = document.getElementById('me-modifier').value; const me = parseFloat(meString) || 150; 
         const bpCount = parseInt(document.getElementById('bp-count').value) || 0;
