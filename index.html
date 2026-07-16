@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVE Echoes: Полимерный Производственного Комплекс</title>
-    <!-- Подключаем альтернативный бесплатный космический шрифт на случай, если Shentox не установлен -->
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <title>EVE Echoes: Полимерный Производственный Комплекс</title>
     <style>
-        /* Подключаем твой локальный файл шрифта принудительно */
+        /* Принудительно подключаем локальный файл шрифта для корректной кириллицы */
         @font-face {
             font-family: 'Shentox Game';
-            /* Если расширение .otf, замени ниже ttf на otf */
+            /* Если у твоего файла расширение .otf, замени ttf на otf ниже */
             src: url('Shentox-Regular.ttf') format('truetype'); 
             font-weight: normal;
             font-style: normal;
@@ -30,8 +28,7 @@
         }
 
         body {
-            /* Теперь принудительно отдаем приоритет нашему 'Shentox Game' */
-            font-family: 'Shentox Game', sans-serif;
+            font-family: 'Shentox Game', 'Segoe UI', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
@@ -136,7 +133,7 @@
             padding: 8px 12px;
             box-sizing: border-box;
             font-size: 14px;
-            font-family: inherit; /* Чтобы инпуты тоже брали Shentox */
+            font-family: inherit; /* Наследуем Shentox Game */
         }
 
         input:focus, select:focus {
@@ -152,7 +149,7 @@
             border-left: 2px solid var(--accent-green);
         }
 
-        /* ИНТЕРФЕЙС КУБИКОВ НАВЫКОВ (КАК В EVE) */
+        /* ИНТЕРФЕЙС КУБИКОВ НАВЫКОВ */
         .skill-item-row {
             display: flex;
             justify-content: space-between;
@@ -317,7 +314,6 @@
         <button class="tab-btn" onclick="switchTab('analytics-tab')">Анализ эффективности</button>
     </div>
 
-    <!-- ТАБ: РЫНОК ЦЕН -->
     <div id="market-tab" class="tab-content active">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -331,7 +327,6 @@
         </div>
     </div>
 
-    <!-- ТАБ: СТРАТЕГИЯ ДОБЫЧИ -->
     <div id="strategy-tab" class="tab-content">
         <div class="card">
             <h2>Настройка источников сырья</h2>
@@ -342,7 +337,6 @@
         </div>
     </div>
 
-    <!-- ТАБ: НАСТРОЙКИ ЧЕРТЕЖЕЙ -->
     <div id="blueprints-tab" class="tab-content">
         <div class="card">
             <h2>Базовые косты чертежей (ISK на 1 БП)</h2>
@@ -350,7 +344,6 @@
         </div>
     </div>
 
-    <!-- ТАБ: НАСТРОЙКА КУБИКОВ НАВЫКОВ -->
     <div id="pe-tab" class="tab-content">
         <div class="card">
             <h2>Промышленные навыки персонажа</h2>
@@ -359,7 +352,6 @@
             </p>
             
             <div id="skills-interactive-container">
-                <!-- Обычный навык -->
                 <div class="skill-item-row">
                     <div class="skill-name-block">
                         <div class="skill-icon-placeholder"></div>
@@ -373,7 +365,6 @@
                         <div class="skill-cube" data-level="5"></div>
                     </div>
                 </div>
-                <!-- Продвинутый навык -->
                 <div class="skill-item-row">
                     <div class="skill-name-block">
                         <div class="skill-icon-placeholder"></div>
@@ -387,7 +378,6 @@
                         <div class="skill-cube" data-level="5"></div>
                     </div>
                 </div>
-                <!-- Экспертный навык -->
                 <div class="skill-item-row">
                     <div class="skill-name-block">
                         <div class="skill-icon-placeholder"></div>
@@ -417,7 +407,6 @@
         </div>
     </div>
 
-    <!-- ТАБ: КАЛЬКУЛЯТОР -->
     <div id="calculator-tab" class="tab-content">
         <div class="accordion-trigger" onclick="toggleAccordion()">
             <span>⚙️ Быстрый просмотр/правка цен материалов (развернуть)</span>
@@ -498,19 +487,24 @@
         </div>
     </div>
 
-    <!-- ТАБ: АНАЛИТИКА -->
     <div id="analytics-tab" class="tab-content">
-
         <div class="card">
             <h2>Рейтинг эффективности полимеров</h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                Сравнение маржинальности полимеров на основе 1 чертежа (200 шт.) при текущей конфигурации кубиков ME.
+                Сравнение маржинальности полимеров на основе заданного количества чертежей при текущей конфигурации кубиков ME.
             </p>
+            
+            <div class="form-group" style="max-width: 300px; margin-bottom: 20px;">
+                <label for="analytics-bp-count">Количество чертежей для сравнения (1 БП = 200 шт.)</label>
+                <input type="number" id="analytics-bp-count" value="20" min="1" oninput="calculateAnalytics()">
+            </div>
+
             <table>
                 <thead>
                     <tr>
                         <th>Полимер</th>
-                        <th>Выручка (200 шт)</th>
+                        <th>Объем (шт)</th>
+                        <th>Выручка (ISK)</th>
                         <th>Косты сырья</th>
                         <th>Фикс. Косты (БП+Кнопка)</th>
                         <th>Всего расходов</th>
@@ -554,18 +548,14 @@
     function getSavedPolyPrices() { const saved = localStorage.getItem('eve_poly_prices'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = d.market_price; } return base; }
     function getSavedStrategy() { const saved = localStorage.getItem('eve_mining_strategy'); if (saved) return JSON.parse(saved); const base = {}; for (const res of Object.keys(defaultPrices)) { base[res] = "buy"; } return base; }
     function getSavedBPSettings() { const saved = localStorage.getItem('eve_bp_settings'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = { bp_cost: d.bp_cost, btn_cost: d.btn_cost }; } return base; }
-    
-    function getSavedMESettings() {
-        const saved = localStorage.getItem('eve_me_settings');
-        return saved ? JSON.parse(saved) : { basic: 0, advanced: 0, expert: 0, station: 11 };
-    }
+    function getSavedMESettings() { const saved = localStorage.getItem('eve_me_settings'); return saved ? JSON.parse(saved) : { basic: 0, advanced: 0, expert: 0, station: 11 }; }
 
     function initApp() { 
-        initPolySelect();       // 1. Жёстко инициализируем список полимеров первым шагом!
-        renderMarketInputs();   // 2. Затем рендерим инпуты цен
-        renderStrategyList();   // 3. Стратегия добычи
-        renderBlueprintsGrid(); // 4. Косты чертежей
-        initInteractiveCubes(); // 5. И в самом конце безопасно запускаем кубики и ME расчет
+        initPolySelect();
+        renderMarketInputs();
+        renderStrategyList();
+        renderBlueprintsGrid();
+        initInteractiveCubes();
     }
 
     function renderMarketInputs() {
@@ -607,47 +597,28 @@
 
     function initInteractiveCubes() {
         const settings = getSavedMESettings();
-        currentSkills.basic = parseInt(settings.basic);
-        if (isNaN(currentSkills.basic)) currentSkills.basic = 0;
-        
-        currentSkills.advanced = parseInt(settings.advanced);
-        if (isNaN(currentSkills.advanced)) currentSkills.advanced = 0;
-        
-        currentSkills.expert = parseInt(settings.expert);
-        if (isNaN(currentSkills.expert)) currentSkills.expert = 0;
-        
+        currentSkills.basic = parseInt(settings.basic) || 0;
+        currentSkills.advanced = parseInt(settings.advanced) || 0;
+        currentSkills.expert = parseInt(settings.expert) || 0;
         document.getElementById('station-bonus').value = settings.station !== undefined ? settings.station : 11;
 
         renderCubeRow('cubes-basic', currentSkills.basic);
         renderCubeRow('cubes-advanced', currentSkills.advanced);
         renderCubeRow('cubes-expert', currentSkills.expert);
-
         calculateMEModifier();
     }
 
     function renderCubeRow(containerId, activeLevel) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        
-        const cubes = container.querySelectorAll('.skill-cube');
-        const currentType = containerId.replace('cubes-', '');
+        const container = document.getElementById(containerId); if (!container) return;
+        const cubes = container.querySelectorAll('.skill-cube'); const currentType = containerId.replace('cubes-', '');
         
         cubes.forEach(cube => {
             const lvl = parseInt(cube.dataset.level);
-            if (lvl <= activeLevel) {
-                cube.classList.add('active');
-            } else {
-                cube.classList.remove('active');
-            }
+            if (lvl <= activeLevel) cube.classList.add('active'); else cube.classList.remove('active');
             
             cube.onclick = function(e) {
-                e.stopPropagation();
-                let targetLvl = parseInt(this.dataset.level);
-                
-                if (currentSkills[currentType] === targetLvl) {
-                    targetLvl = targetLvl - 1;
-                }
-                
+                e.stopPropagation(); let targetLvl = parseInt(this.dataset.level);
+                if (currentSkills[currentType] === targetLvl) targetLvl = targetLvl - 1;
                 currentSkills[currentType] = targetLvl;
                 renderCubeRow(containerId, targetLvl);
                 calculateMEModifier();
@@ -656,11 +627,8 @@
     }
 
     function calculateMEModifier() {
-        const basicBonus = currentSkills.basic * 6;
-        const advancedBonus = currentSkills.advanced * 4;
-        const expertBonus = currentSkills.expert * 1;
-        const stationBonus = parseFloat(document.getElementById('station-bonus').value);
-        const finalStationBonus = isNaN(stationBonus) ? 0 : stationBonus;
+        const basicBonus = currentSkills.basic * 6; const advancedBonus = currentSkills.advanced * 4; const expertBonus = currentSkills.expert * 1;
+        const stationBonus = parseFloat(document.getElementById('station-bonus').value); const finalStationBonus = isNaN(stationBonus) ? 0 : stationBonus;
 
         let finalME = 150 - basicBonus - advancedBonus - expertBonus - finalStationBonus;
         if (finalME < 75) finalME = 75;
@@ -668,16 +636,8 @@
         document.getElementById('calculated-me-display').innerText = finalME + "%";
         document.getElementById('me-modifier').value = finalME + "%";
 
-        localStorage.setItem('eve_me_settings', JSON.stringify({ 
-            basic: currentSkills.basic, 
-            advanced: currentSkills.advanced, 
-            expert: currentSkills.expert, 
-            station: finalStationBonus 
-        }));
-        
-        if (typeof calculate === "function") {
-            calculate();
-        }
+        localStorage.setItem('eve_me_settings', JSON.stringify({ basic: currentSkills.basic, advanced: currentSkills.advanced, expert: currentSkills.expert, station: finalStationBonus }));
+        calculate();
     }
 
     function syncResourcePrice(el) {
@@ -717,8 +677,7 @@
 
     function resetPrices() {
         if (confirm("Сбросить все локальные изменения и вернуть чистые стартовые настройки?")) {
-            localStorage.clear();
-            initApp(); loadPolyData();
+            localStorage.clear(); initApp(); loadPolyData();
         }
     }
 
@@ -740,13 +699,14 @@
     }
 
     function loadPolyData() {
-        const polyName = document.getElementById('polymer-select').value; const polyData = recipesDatabase[polyName]; const polyPrices = getSavedPolyPrices(); const bpSettings = getSavedBPSettings();
+        const polyName = document.getElementById('polymer-select').value; if (!polyName) return;
+        const polyData = recipesDatabase[polyName]; const polyPrices = getSavedPolyPrices(); const bpSettings = getSavedBPSettings();
         document.getElementById('sell-price').value = polyPrices[polyName] || polyData.market_price;
         document.getElementById('bp-cost').value = bpSettings[polyName].bp_cost; document.getElementById('btn-cost').value = bpSettings[polyName].btn_cost;
         calculate();
     }
 
- function calculate() {
+    function calculate() {
         const polyName = document.getElementById('polymer-select').value; if (!polyName) return;
         const polyData = recipesDatabase[polyName]; const meString = document.getElementById('me-modifier').value; const me = parseFloat(meString) || 150; 
         const bpCount = parseInt(document.getElementById('bp-count').value) || 0;
@@ -760,16 +720,12 @@
 
         for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
             let totalAmountRequired = 0;
-            
             slots.forEach(bpInSlot => { 
-                const rawTotal = (baseAmount * (me / 150)) * bpInSlot;
-                // Убиваем системные микро-хвостики JS округлением до 4 знаков
-                const cleanedTotal = Math.round(rawTotal * 10000) / 10000;
-                // И только потом делаем игровой Math.ceil()
-                totalAmountRequired += Math.ceil(cleanedTotal); 
+                // Безупречная математика: деление на 150 в конце убирает любые дробные погрешности JS
+                totalAmountRequired += Math.ceil((baseAmount * me * bpInSlot) / 150); 
             });
             
-            const amountPerBPWithME = baseAmount * (me / 150); const isSelfMined = strategy[matName] === "self";
+            const amountPerBPWithME = (baseAmount * me) / 150; const isSelfMined = strategy[matName] === "self";
             const matPrice = isSelfMined ? 0 : (prices[matName] || 0); const totalMatCost = totalAmountRequired * matPrice;
             totalMaterialsCost += totalMatCost;
             
@@ -798,37 +754,25 @@
         profitEl.className = netProfit >= 0 ? "stat-val profit-pos" : "stat-val profit-neg";
     }
 
-	function calculateAnalytics() {
-        const prices = getSavedPrices(); 
-        const polyPrices = getSavedPolyPrices(); 
-        const strategy = getSavedStrategy(); 
-        const bpSettings = getSavedBPSettings();
+    function calculateAnalytics() {
+        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
         
-        // Безопасно вытягиваем ME
+        // Безопасно вытягиваем текущую Material Efficiency
         const meInput = document.getElementById('me-modifier');
         const me = meInput ? (parseFloat(meInput.value) || 150) : 150;
         
-        // Безопасно вытягиваем количество БП для аналитики
+        // Считываем количество чертежей из поля ввода на вкладке аналитики
         const bpCountInput = document.getElementById('analytics-bp-count');
         const bpCount = bpCountInput ? (parseInt(bpCountInput.value) || 1) : 20;
         
-        let remainingBPs = bpCount; 
-        const slots = [];
-        while (remainingBPs > 0) { 
-            if (remainingBPs >= 20) { 
-                slots.push(20); 
-                remainingBPs -= 20; 
-            } else { 
-                slots.push(remainingBPs); 
-                remainingBPs = 0; 
-            } 
-        }
+        // Делим пачку на слоты по 20 БП для корректного округления
+        let remainingBPs = bpCount; const slots = [];
+        while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
 
         const analyticsList = [];
 
         for (const [polyName, polyData] of Object.entries(recipesDatabase)) {
             let materialsCost = 0;
-            
             for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
                 let totalAmountRequired = 0;
                 slots.forEach(bpInSlot => { 
@@ -838,35 +782,19 @@
                 materialsCost += totalAmountRequired * (isSelfMined ? 0 : (prices[matName] || 0));
             }
             
-            // Безопасно берём косты чертежей (если настроек в памяти нет — берём базу рецепта)
             const bpCost = (bpSettings && bpSettings[polyName]) ? (bpSettings[polyName].bp_cost || 0) : (polyData.bp_cost || 0);
             const btnCost = (bpSettings && bpSettings[polyName]) ? (bpSettings[polyName].btn_cost || 0) : (polyData.btn_cost || 0);
             
             const totalFixedCost = (Number(bpCost) + Number(btnCost)) * bpCount;
             const totalCost = materialsCost + totalFixedCost;
-            
             const currentSellPrice = polyPrices[polyName] || polyData.market_price;
-            const totalItemsProduced = 200 * bpCount; 
-            const revenue = totalItemsProduced * currentSellPrice; 
-            const profit = revenue - totalCost;
+            const totalItemsProduced = 200 * bpCount; const revenue = totalItemsProduced * currentSellPrice; const profit = revenue - totalCost;
             
-            analyticsList.push({ 
-                name: polyName, 
-                produced: totalItemsProduced, 
-                revenue: revenue, 
-                matsCost: materialsCost, 
-                fixedCost: totalFixedCost, 
-                totalCost: totalCost, 
-                profit: profit 
-            });
+            analyticsList.push({ name: polyName, produced: totalItemsProduced, revenue: revenue, matsCost: materialsCost, fixedCost: totalFixedCost, totalCost: totalCost, profit: profit });
         }
 
-        // Сортируем
         analyticsList.sort((a, b) => b.profit - a.profit);
-        
-        const tbody = document.getElementById('analytics-table-body'); 
-        if (!tbody) return; // Защита, если таблица ещё не отрендерилась в DOM
-        
+        const tbody = document.getElementById('analytics-table-body'); if (!tbody) return;
         tbody.innerHTML = '';
         
         analyticsList.forEach(item => {
