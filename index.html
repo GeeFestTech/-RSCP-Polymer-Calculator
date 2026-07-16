@@ -799,16 +799,30 @@
     }
 
 	function calculateAnalytics() {
-        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
+        const prices = getSavedPrices(); 
+        const polyPrices = getSavedPolyPrices(); 
+        const strategy = getSavedStrategy(); 
+        const bpSettings = getSavedBPSettings();
         
-        // Берем текущий ME из поля на вкладке калькулятора (тот, что зависит от кубиков и станции)
-        const meString = document.getElementById('me-modifier').value;
-        const me = parseFloat(meString) || 150;
+        // Безопасно вытягиваем ME
+        const meInput = document.getElementById('me-modifier');
+        const me = meInput ? (parseFloat(meInput.value) || 150) : 150;
         
-        const bpCount = parseInt(document.getElementById('analytics-bp-count').value) || 1;
+        // Безопасно вытягиваем количество БП для аналитики
+        const bpCountInput = document.getElementById('analytics-bp-count');
+        const bpCount = bpCountInput ? (parseInt(bpCountInput.value) || 1) : 20;
         
-        let remainingBPs = bpCount; const slots = [];
-        while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
+        let remainingBPs = bpCount; 
+        const slots = [];
+        while (remainingBPs > 0) { 
+            if (remainingBPs >= 20) { 
+                slots.push(20); 
+                remainingBPs -= 20; 
+            } else { 
+                slots.push(remainingBPs); 
+                remainingBPs = 0; 
+            } 
+        }
 
         const analyticsList = [];
 
@@ -818,18 +832,17 @@
             for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
                 let totalAmountRequired = 0;
                 slots.forEach(bpInSlot => { 
-                    // Считаем без плавающей точки, используя единый ME от навыков
                     totalAmountRequired += Math.ceil((baseAmount * me * bpInSlot) / 150); 
                 });
                 const isSelfMined = strategy[matName] === "self";
                 materialsCost += totalAmountRequired * (isSelfMined ? 0 : (prices[matName] || 0));
             }
             
-            // Защита на случай, если для какого-то полимера еще нет настроек в памяти
-            const bpCost = bpSettings[polyName] ? (bpSettings[polyName].bp_cost || 0) : (polyData.bp_cost || 0);
-            const btnCost = bpSettings[polyName] ? (bpSettings[polyName].btn_cost || 0) : (polyData.btn_cost || 0);
+            // Безопасно берём косты чертежей (если настроек в памяти нет — берём базу рецепта)
+            const bpCost = (bpSettings && bpSettings[polyName]) ? (bpSettings[polyName].bp_cost || 0) : (polyData.bp_cost || 0);
+            const btnCost = (bpSettings && bpSettings[polyName]) ? (bpSettings[polyName].btn_cost || 0) : (polyData.btn_cost || 0);
             
-            const totalFixedCost = (bpCost + btnCost) * bpCount;
+            const totalFixedCost = (Number(bpCost) + Number(btnCost)) * bpCount;
             const totalCost = materialsCost + totalFixedCost;
             
             const currentSellPrice = polyPrices[polyName] || polyData.market_price;
@@ -837,11 +850,23 @@
             const revenue = totalItemsProduced * currentSellPrice; 
             const profit = revenue - totalCost;
             
-            analyticsList.push({ name: polyName, produced: totalItemsProduced, revenue: revenue, matsCost: materialsCost, fixedCost: totalFixedCost, totalCost: totalCost, profit: profit });
+            analyticsList.push({ 
+                name: polyName, 
+                produced: totalItemsProduced, 
+                revenue: revenue, 
+                matsCost: materialsCost, 
+                fixedCost: totalFixedCost, 
+                totalCost: totalCost, 
+                profit: profit 
+            });
         }
 
+        // Сортируем
         analyticsList.sort((a, b) => b.profit - a.profit);
+        
         const tbody = document.getElementById('analytics-table-body'); 
+        if (!tbody) return; // Защита, если таблица ещё не отрендерилась в DOM
+        
         tbody.innerHTML = '';
         
         analyticsList.forEach(item => {
