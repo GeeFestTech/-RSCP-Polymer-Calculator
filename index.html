@@ -315,105 +315,106 @@
     <h1 style="margin-bottom: 20px; color: var(--accent-color);">EVE Echoes: Полимерный Производственный Комплекс</h1>
     
     <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('market-tab')">Рынок цен</button>
-        <button class="tab-btn" onclick="switchTab('strategy-tab')">Стратегия добычи</button>
-        <button class="tab-btn" onclick="switchTab('blueprints-tab')">Настройки чертежей</button>
-        <button class="tab-btn" onclick="switchTab('pe-tab')">Навыки и Эффективность (ME)</button>
+        <button class="tab-btn" onclick="switchTab('projects-tab')">Проекты</button>
         <button class="tab-btn" onclick="switchTab('calculator-tab')">Калькулятор</button>
         <button class="tab-btn" onclick="switchTab('analytics-tab')">Анализ эффективности</button>
-        <button class="tab-btn" onclick="switchTab('projects-tab')">Проекты</button>
+        <button class="tab-btn active" onclick="switchTab('market-tab')">Рынок цен</button>
+        <button class="tab-btn" onclick="switchTab('settings-tab')">Настройки</button>
     </div>
 
-    <div id="market-tab" class="tab-content active">
+    <div id="projects-tab" class="tab-content">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2>Цены сырья и материалов (Ручной ввод, ISK)</h2>
-                <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
+            <h2>Управление проектом</h2>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="project-load-select">Сохранённые проекты</label>
+                    <select id="project-load-select" onchange="loadSelectedProject(this.value)"></select>
+                </div>
+                <div class="form-group">
+                    <label for="project-name-input">Название проекта</label>
+                    <input type="text" id="project-name-input" placeholder="Например: Titan Hull">
+                </div>
             </div>
-            <div id="market-resources-container" class="grid-market"></div>
-
-            <h2>Цены продажи готовых полимеров (ISK за 1 шт)</h2>
-            <div id="market-polymers-container" class="grid-market"></div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-reset btn-confirm" onclick="saveCurrentProject()">💾 Сохранить проект</button>
+                <button class="btn-reset btn-accent" onclick="newProject()">➕ Новый проект</button>
+                <button class="btn-reset" onclick="deleteSelectedProject()">🗑️ Удалить проект</button>
+            </div>
         </div>
-    </div>
 
-    <div id="strategy-tab" class="tab-content">
         <div class="card">
-            <h2>Настройка источников сырья</h2>
+            <h2>Список необходимых полимеров</h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                Ресурсы со статусом <b>«Добуду сам»</b> будут учитываться по цене <b>0 ISK</b>.
+                Укажи, сколько штук каждого полимера нужно для постройки. 1 БП = 200 шт, поэтому итоговое произведённое количество может немного превышать запрошенное (округление до целых чертежей).
             </p>
-            <div id="strategy-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;"></div>
+            <div id="project-rows-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+            <button class="btn-reset btn-accent" onclick="addProjectRow()">+ Добавить полимер</button>
         </div>
-    </div>
 
-    <div id="blueprints-tab" class="tab-content">
         <div class="card">
-            <h2>Базовые косты чертежей (ISK на 1 БП)</h2>
-            <div id="blueprints-grid-container" class="grid-blueprints"></div>
+            <h2>Итоги по проекту</h2>
+            <div class="result-box">
+                <div class="stat-card">
+                    <div>Всего полимеров запрошено</div>
+                    <div class="stat-val" id="project-total-items">0 шт</div>
+                </div>
+                <div class="stat-card">
+                    <div>Суммарно чертежей (БП)</div>
+                    <div class="stat-val" id="project-total-bps">0 БП</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #ff9100;">
+                    <div>Косты кнопок</div>
+                    <div class="stat-val" id="project-total-buttons" style="color: #ff9100;">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Косты сырья</div>
+                    <div class="stat-val" id="project-total-materials">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Итого постройка (сырьё + БП + кнопки)</div>
+                    <div class="stat-val" id="project-total-production">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Итого купить на рынке напрямую</div>
+                    <div class="stat-val" id="project-total-market">0 ISK</div>
+                </div>
+                <div class="stat-card profit">
+                    <div>Итог сравнения</div>
+                    <div class="stat-val" id="project-total-delta">0 ISK</div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div id="pe-tab" class="tab-content">
         <div class="card">
-            <h2>Промышленные навыки персонажа</h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                Кликай по кубикам, чтобы задать уровень навыка, прямо как в интерфейсе EVE Echoes. Расчет идет вниз от базовых 150%.
-            </p>
-            
-            <div id="skills-interactive-container">
-                <div class="skill-item-row">
-                    <div class="skill-name-block">
-                        <div class="skill-icon-placeholder"></div>
-                        <div class="skill-title">Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(6% за ур., макс +30%)</span></div>
-                    </div>
-                    <div class="cube-container" id="cubes-basic" data-step="6">
-                        <div class="skill-cube" data-level="1"></div>
-                        <div class="skill-cube" data-level="2"></div>
-                        <div class="skill-cube" data-level="3"></div>
-                        <div class="skill-cube" data-level="4"></div>
-                        <div class="skill-cube" data-level="5"></div>
-                    </div>
-                </div>
-                <div class="skill-item-row">
-                    <div class="skill-name-block">
-                        <div class="skill-icon-placeholder"></div>
-                        <div class="skill-title">Advanced Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(4% за ур., макс +20%)</span></div>
-                    </div>
-                    <div class="cube-container" id="cubes-advanced" data-step="4">
-                        <div class="skill-cube" data-level="1"></div>
-                        <div class="skill-cube" data-level="2"></div>
-                        <div class="skill-cube" data-level="3"></div>
-                        <div class="skill-cube" data-level="4"></div>
-                        <div class="skill-cube" data-level="5"></div>
-                    </div>
-                </div>
-                <div class="skill-item-row">
-                    <div class="skill-name-block">
-                        <div class="skill-icon-placeholder"></div>
-                        <div class="skill-title">Expert Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(1% за ур., макс +5%)</span></div>
-                    </div>
-                    <div class="cube-container" id="cubes-expert" data-step="1">
-                        <div class="skill-cube" data-level="1"></div>
-                        <div class="skill-cube" data-level="2"></div>
-                        <div class="skill-cube" data-level="3"></div>
-                        <div class="skill-cube" data-level="4"></div>
-                        <div class="skill-cube" data-level="5"></div>
-                    </div>
-                </div>
-            </div>
+            <h2>Разбивка по полимерам</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Полимер</th>
+                        <th>Нужно (шт)</th>
+                        <th>Чертежей (БП)</th>
+                        <th>Будет произведено (шт)</th>
+                        <th>Себестоимость постройки</th>
+                        <th>Цена покупки на рынке</th>
+                        <th>Разница (экономия постройки)</th>
+                    </tr>
+                </thead>
+                <tbody id="project-breakdown-body"></tbody>
+            </table>
+        </div>
 
-            <h3 style="margin-top: 25px;">Модификаторы структуры</h3>
-            <div class="form-group" style="max-width: 400px;">
-                <label>Снижение материалоемкости на заводе станции (%)</label>
-                <input type="number" id="station-bonus" value="11" min="0" max="50" oninput="calculateMEModifier()">
-            </div>
-
-            <div class="stat-card" style="margin-top: 20px; border-left-color: var(--accent-color); background: #040609;">
-                <div>Итоговая эффективность материалов (Material Efficiency):</div>
-                <div class="stat-val" id="calculated-me-display" style="color: var(--accent-color);">139%</div>
-                <p style="color: var(--text-muted); font-size: 11px; margin: 5px 0 0 0;">Текущий игровой лимит: не ниже 75%</p>
-            </div>
+        <div class="card">
+            <h2>Суммарный список ресурсов на проект</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Материал</th>
+                        <th>Требуется всего</th>
+                        <th>Стоимость (ISK)</th>
+                    </tr>
+                </thead>
+                <tbody id="project-resources-body"></tbody>
+            </table>
         </div>
     </div>
 
@@ -526,99 +527,92 @@
         </div>
     </div>
 
-    <div id="projects-tab" class="tab-content">
+    <div id="market-tab" class="tab-content active">
         <div class="card">
-            <h2>Управление проектом</h2>
-            <div class="input-grid">
-                <div class="form-group">
-                    <label for="project-load-select">Сохранённые проекты</label>
-                    <select id="project-load-select" onchange="loadSelectedProject(this.value)"></select>
-                </div>
-                <div class="form-group">
-                    <label for="project-name-input">Название проекта</label>
-                    <input type="text" id="project-name-input" placeholder="Например: Titan Hull">
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Цены сырья и материалов (Ручной ввод, ISK)</h2>
+                <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
             </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-reset btn-confirm" onclick="saveCurrentProject()">💾 Сохранить проект</button>
-                <button class="btn-reset btn-accent" onclick="newProject()">➕ Новый проект</button>
-                <button class="btn-reset" onclick="deleteSelectedProject()">🗑️ Удалить проект</button>
-            </div>
-        </div>
+            <div id="market-resources-container" class="grid-market"></div>
 
+            <h2>Цены продажи готовых полимеров (ISK за 1 шт)</h2>
+            <div id="market-polymers-container" class="grid-market"></div>
+        </div>
+    </div>
+
+    <div id="settings-tab" class="tab-content">
         <div class="card">
-            <h2>Список необходимых полимеров</h2>
+            <h2>Промышленные навыки персонажа</h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                Укажи, сколько штук каждого полимера нужно для постройки. 1 БП = 200 шт, поэтому итоговое произведённое количество может немного превышать запрошенное (округление до целых чертежей).
+                Кликай по кубикам, чтобы задать уровень навыка, прямо как в интерфейсе EVE Echoes. Расчет идет вниз от базовых 150%.
             </p>
-            <div id="project-rows-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
-            <button class="btn-reset btn-accent" onclick="addProjectRow()">+ Добавить полимер</button>
-        </div>
 
-        <div class="card">
-            <h2>Итоги по проекту</h2>
-            <div class="result-box">
-                <div class="stat-card">
-                    <div>Всего полимеров запрошено</div>
-                    <div class="stat-val" id="project-total-items">0 шт</div>
+            <div id="skills-interactive-container">
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(6% за ур., макс +30%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-basic" data-step="6">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div>Суммарно чертежей (БП)</div>
-                    <div class="stat-val" id="project-total-bps">0 БП</div>
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Advanced Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(4% за ур., макс +20%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-advanced" data-step="4">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
                 </div>
-                <div class="stat-card" style="border-left-color: #ff9100;">
-                    <div>Косты кнопок</div>
-                    <div class="stat-val" id="project-total-buttons" style="color: #ff9100;">0 ISK</div>
+                <div class="skill-item-row">
+                    <div class="skill-name-block">
+                        <div class="skill-icon-placeholder"></div>
+                        <div class="skill-title">Expert Polymer Material Manufacture <span style="color:var(--text-muted); font-size:12px;">(1% за ур., макс +5%)</span></div>
+                    </div>
+                    <div class="cube-container" id="cubes-expert" data-step="1">
+                        <div class="skill-cube" data-level="1"></div>
+                        <div class="skill-cube" data-level="2"></div>
+                        <div class="skill-cube" data-level="3"></div>
+                        <div class="skill-cube" data-level="4"></div>
+                        <div class="skill-cube" data-level="5"></div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div>Косты сырья</div>
-                    <div class="stat-val" id="project-total-materials">0 ISK</div>
-                </div>
-                <div class="stat-card">
-                    <div>Итого постройка (сырьё + БП + кнопки)</div>
-                    <div class="stat-val" id="project-total-production">0 ISK</div>
-                </div>
-                <div class="stat-card">
-                    <div>Итого купить на рынке напрямую</div>
-                    <div class="stat-val" id="project-total-market">0 ISK</div>
-                </div>
-                <div class="stat-card profit">
-                    <div>Итог сравнения</div>
-                    <div class="stat-val" id="project-total-delta">0 ISK</div>
-                </div>
+            </div>
+
+            <h3 style="margin-top: 25px;">Модификаторы структуры</h3>
+            <div class="form-group" style="max-width: 400px;">
+                <label>Снижение материалоемкости на заводе станции (%)</label>
+                <input type="number" id="station-bonus" value="11" min="0" max="50" oninput="calculateMEModifier()">
+            </div>
+
+            <div class="stat-card" style="margin-top: 20px; border-left-color: var(--accent-color); background: #040609;">
+                <div>Итоговая эффективность материалов (Material Efficiency):</div>
+                <div class="stat-val" id="calculated-me-display" style="color: var(--accent-color);">139%</div>
+                <p style="color: var(--text-muted); font-size: 11px; margin: 5px 0 0 0;">Текущий игровой лимит: не ниже 75%</p>
             </div>
         </div>
 
         <div class="card">
-            <h2>Разбивка по полимерам</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Полимер</th>
-                        <th>Нужно (шт)</th>
-                        <th>Чертежей (БП)</th>
-                        <th>Будет произведено (шт)</th>
-                        <th>Себестоимость постройки</th>
-                        <th>Цена покупки на рынке</th>
-                        <th>Разница (экономия постройки)</th>
-                    </tr>
-                </thead>
-                <tbody id="project-breakdown-body"></tbody>
-            </table>
+            <h2>Настройка источников сырья</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                Ресурсы со статусом <b>«Добуду сам»</b> будут учитываться по цене <b>0 ISK</b>.
+            </p>
+            <div id="strategy-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;"></div>
         </div>
 
         <div class="card">
-            <h2>Суммарный список ресурсов на проект</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Материал</th>
-                        <th>Требуется всего</th>
-                        <th>Стоимость (ISK)</th>
-                    </tr>
-                </thead>
-                <tbody id="project-resources-body"></tbody>
-            </table>
+            <h2>Базовые косты чертежей (ISK на 1 БП)</h2>
+            <div id="blueprints-grid-container" class="grid-blueprints"></div>
         </div>
     </div>
 </div>
