@@ -542,13 +542,15 @@
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2>Цены сырья и материалов (Ручной ввод, ISK)</h2>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     <button class="btn-reset btn-accent" onclick="saveForEveryone()">🌍 Сохранить для всех</button>
-                    <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
+                    <button class="btn-reset" onclick="loadLatestPrices()">🔄 Загрузить последние данные</button>
+                    <span id="prices-updated-at" style="color: var(--text-muted); font-size: 12px;"></span>
                 </div>
             </div>
             <p style="color: var(--text-muted); font-size: 12px; margin: -10px 0 15px;">
-                «Сохранить для всех» отправляет твои текущие цены (сырьё + полимеры) как новые заводские значения для всех посетителей сайта — требует пароль.
+                «Сохранить для всех» отправляет твои текущие цены (сырьё + полимеры) как новые общие значения для всех посетителей сайта — требует пароль.
+                «Загрузить последние данные» подтягивает актуальные общие цены и заменяет ими твои текущие несохранённые правки на этой вкладке.
             </p>
             <div id="market-resources-container" class="grid-market"></div>
 
@@ -829,9 +831,30 @@
         calculate();
     }
 
-    function resetPrices() {
-        if (confirm("Сбросить все локальные изменения и вернуть чистые стартовые настройки?")) {
-            localStorage.clear(); initApp(); loadPolyData();
+    let factoryPricesUpdatedAt = null;
+
+    function renderPricesUpdatedAt() {
+        const el = document.getElementById('prices-updated-at'); if (!el) return;
+        if (!factoryPricesUpdatedAt) { el.innerText = 'Обновлено: неизвестно'; return; }
+        const d = new Date(factoryPricesUpdatedAt);
+        const formatted = isNaN(d) ? factoryPricesUpdatedAt : d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        el.innerText = 'Обновлено: ' + formatted;
+    }
+
+    async function loadLatestPrices() {
+        if (!confirm('Загрузить последние общие цены? Твои текущие несохранённые правки цен на этой вкладке будут заменены.')) return;
+        try {
+            const res = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (data.resourcePrices) localStorage.setItem('eve_market_prices', JSON.stringify(data.resourcePrices));
+            if (data.polymerPrices) localStorage.setItem('eve_poly_prices', JSON.stringify(data.polymerPrices));
+            factoryPricesUpdatedAt = data.updatedAt || null;
+            initApp();
+            loadPolyData();
+            renderPricesUpdatedAt();
+        } catch (e) {
+            alert('Не удалось загрузить последние цены: ' + e.message);
         }
     }
 
@@ -885,9 +908,11 @@
                     if (recipesDatabase[name]) recipesDatabase[name].market_price = price;
                 }
             }
+            factoryPricesUpdatedAt = data.updatedAt || null;
         } catch (e) {
             // prices.json недоступен (офлайн / файл ещё не создан) — остаёмся на захардкоженных заводских значениях
         }
+        renderPricesUpdatedAt();
     }
 
     function switchTab(tabId) {
