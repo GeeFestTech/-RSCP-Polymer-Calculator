@@ -1,0 +1,24 @@
+{
+  "resourcePrices": {
+    "Reactive Gas": 135, "Condensates": 234, "Noble Gas": 190, "Supertensile Plastics": 640,
+    "Industrial Fibers": 1394, "Silicate Glass": 697, "PolyAramids": 220, "Oxygen Isotopes": 3797,
+    "Tritanium": 1, "Pyerite": 3.5, "Mexallon": 5, "Isogen": 139, "Nocxium": 566, "Zydrine": 2515, "Megacyte": 618,
+    "Fullerite-C50": 470, "Fullerite-C60": 890, "Fullerite-C70": 1087, "Gray Moon Ore": 1300,
+    "Brown Moon Ore": 1050, "Black Moon Ore": 850, "Motley Moon Ore": 2699, "Pink Star Crystal": 6000,
+    "Purple Star Crystal": 2485, "Blue Star Crystal": 3895, "Chromatic Star Crystal": 13999
+  },
+  "polymerPrices": {
+    "Fullerides": 50900,
+    "Titanium Carbide": 56000,
+    "Crystalline Carbonide": 74990,
+    "Nanotransistors": 38738,
+    "PPD Fullerene Fiber": 29500,
+    "Fullero-Ferrocene": 20000,
+    "Fullerene Intercalated": 47500,
+    "Phenolic Composites": 49000,
+    "Sylramic Fibers": 164900,
+    "Reinforced Carbon Fiber": 84999,
+    "Ferrogel": 65800,
+    "Hexite": 68600
+  }
+}

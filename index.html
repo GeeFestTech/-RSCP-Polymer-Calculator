@@ -542,8 +542,14 @@
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2>Цены сырья и материалов (Ручной ввод, ISK)</h2>
-                <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-reset btn-accent" onclick="saveForEveryone()">🌍 Сохранить для всех</button>
+                    <button class="btn-reset" onclick="resetPrices()">Сбросить к заводским настройкам</button>
+                </div>
             </div>
+            <p style="color: var(--text-muted); font-size: 12px; margin: -10px 0 15px;">
+                «Сохранить для всех» отправляет твои текущие цены (сырьё + полимеры) как новые заводские значения для всех посетителей сайта — требует пароль.
+            </p>
             <div id="market-resources-container" class="grid-market"></div>
 
             <h2>Цены продажи готовых полимеров (ISK за 1 шт)</h2>
@@ -826,6 +832,61 @@
     function resetPrices() {
         if (confirm("Сбросить все локальные изменения и вернуть чистые стартовые настройки?")) {
             localStorage.clear(); initApp(); loadPolyData();
+        }
+    }
+
+    // Адрес Cloudflare Worker, который принимает POST и коммитит prices.json в GitHub.
+    // Задеплой воркер (см. cloudflare-worker/README.md) и впиши сюда его реальный URL.
+    const SAVE_ENDPOINT = "https://eve-polymer-price-sync.elvinoner.workers.dev/save";
+
+    async function saveForEveryone() {
+        if (SAVE_ENDPOINT.includes('REPLACE-WITH-YOUR-WORKER-URL')) {
+            alert('Функция ещё не настроена: нужно задеплоить Cloudflare Worker и вписать его адрес в константу SAVE_ENDPOINT. Инструкция — в cloudflare-worker/README.md.');
+            return;
+        }
+        if (!confirm('Записать твои текущие цены (сырьё + полимеры) как новые заводские настройки для ВСЕХ посетителей сайта? Это создаст коммит в GitHub-репозиторий.')) return;
+
+        const password = prompt('Пароль для сохранения заводских цен:');
+        if (!password) return;
+
+        const resourcePrices = getSavedPrices();
+        const polymerPrices = getSavedPolyPrices();
+
+        const btn = event.target; const originalText = btn.innerText;
+        btn.innerText = 'Сохраняю...'; btn.disabled = true;
+
+        try {
+            const res = await fetch(SAVE_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password, resourcePrices, polymerPrices })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                alert('Готово! Заводские цены обновлены для всех.' + (data.commitUrl ? '\nКоммит: ' + data.commitUrl : ''));
+            } else {
+                alert('Не удалось сохранить: ' + (data.error || res.statusText));
+            }
+        } catch (e) {
+            alert('Ошибка сети при сохранении: ' + e.message);
+        } finally {
+            btn.innerText = originalText; btn.disabled = false;
+        }
+    }
+
+    async function loadFactoryPricesOverride() {
+        try {
+            const res = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.resourcePrices) Object.assign(defaultPrices, data.resourcePrices);
+            if (data.polymerPrices) {
+                for (const [name, price] of Object.entries(data.polymerPrices)) {
+                    if (recipesDatabase[name]) recipesDatabase[name].market_price = price;
+                }
+            }
+        } catch (e) {
+            // prices.json недоступен (офлайн / файл ещё не создан) — остаёмся на захардкоженных заводских значениях
         }
     }
 
@@ -1170,7 +1231,10 @@
         calculateProject();
     }
 
-    initApp(); loadPolyData();
+    loadFactoryPricesOverride().finally(() => {
+        initApp();
+        loadPolyData();
+    });
     document.getElementById('calculator-tab').addEventListener('input', calculate);
 </script>
 </body>
