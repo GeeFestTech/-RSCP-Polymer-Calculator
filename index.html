@@ -297,6 +297,15 @@
         .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
         .btn-reset { background-color: #0f172a; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 16px; cursor: pointer; font-size: 13px; }
         .btn-reset:hover { border-color: var(--accent-red); color: #fff; }
+
+        /* ВКЛАДКА "ПРОЕКТЫ" */
+        .project-row { display: grid; grid-template-columns: 1fr 160px 40px; gap: 10px; align-items: center; }
+        .btn-row-remove { background: #1a0a0a; border: 1px solid var(--accent-red); color: var(--accent-red); cursor: pointer; font-size: 14px; padding: 8px; }
+        .btn-row-remove:hover { background: var(--accent-red); color: #fff; }
+        .btn-accent { border-color: var(--accent-color) !important; color: var(--accent-color) !important; }
+        .btn-accent:hover { background-color: var(--accent-color) !important; color: #06090d !important; }
+        .btn-confirm { border-color: var(--accent-green) !important; color: var(--accent-green) !important; }
+        .btn-confirm:hover { background-color: var(--accent-green) !important; color: #06090d !important; }
         .self-mined-badge { background: #061f14; color: var(--accent-green); padding: 2px 6px; border: 1px solid #00e676; font-size: 10px; font-weight: bold; }
     </style>
 </head>
@@ -312,6 +321,7 @@
         <button class="tab-btn" onclick="switchTab('pe-tab')">Навыки и Эффективность (ME)</button>
         <button class="tab-btn" onclick="switchTab('calculator-tab')">Калькулятор</button>
         <button class="tab-btn" onclick="switchTab('analytics-tab')">Анализ эффективности</button>
+        <button class="tab-btn" onclick="switchTab('projects-tab')">Проекты</button>
     </div>
 
     <div id="market-tab" class="tab-content active">
@@ -515,6 +525,102 @@
             </table>
         </div>
     </div>
+
+    <div id="projects-tab" class="tab-content">
+        <div class="card">
+            <h2>Управление проектом</h2>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="project-load-select">Сохранённые проекты</label>
+                    <select id="project-load-select" onchange="loadSelectedProject(this.value)"></select>
+                </div>
+                <div class="form-group">
+                    <label for="project-name-input">Название проекта</label>
+                    <input type="text" id="project-name-input" placeholder="Например: Titan Hull">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-reset btn-confirm" onclick="saveCurrentProject()">💾 Сохранить проект</button>
+                <button class="btn-reset btn-accent" onclick="newProject()">➕ Новый проект</button>
+                <button class="btn-reset" onclick="deleteSelectedProject()">🗑️ Удалить проект</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Список необходимых полимеров</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                Укажи, сколько штук каждого полимера нужно для постройки. 1 БП = 200 шт, поэтому итоговое произведённое количество может немного превышать запрошенное (округление до целых чертежей).
+            </p>
+            <div id="project-rows-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+            <button class="btn-reset btn-accent" onclick="addProjectRow()">+ Добавить полимер</button>
+        </div>
+
+        <div class="card">
+            <h2>Итоги по проекту</h2>
+            <div class="result-box">
+                <div class="stat-card">
+                    <div>Всего полимеров запрошено</div>
+                    <div class="stat-val" id="project-total-items">0 шт</div>
+                </div>
+                <div class="stat-card">
+                    <div>Суммарно чертежей (БП)</div>
+                    <div class="stat-val" id="project-total-bps">0 БП</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #ff9100;">
+                    <div>Косты кнопок</div>
+                    <div class="stat-val" id="project-total-buttons" style="color: #ff9100;">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Косты сырья</div>
+                    <div class="stat-val" id="project-total-materials">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Итого постройка (сырьё + БП + кнопки)</div>
+                    <div class="stat-val" id="project-total-production">0 ISK</div>
+                </div>
+                <div class="stat-card">
+                    <div>Итого купить на рынке напрямую</div>
+                    <div class="stat-val" id="project-total-market">0 ISK</div>
+                </div>
+                <div class="stat-card profit">
+                    <div>Итог сравнения</div>
+                    <div class="stat-val" id="project-total-delta">0 ISK</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Разбивка по полимерам</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Полимер</th>
+                        <th>Нужно (шт)</th>
+                        <th>Чертежей (БП)</th>
+                        <th>Будет произведено (шт)</th>
+                        <th>Себестоимость постройки</th>
+                        <th>Цена покупки на рынке</th>
+                        <th>Разница (экономия постройки)</th>
+                    </tr>
+                </thead>
+                <tbody id="project-breakdown-body"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Суммарный список ресурсов на проект</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Материал</th>
+                        <th>Требуется всего</th>
+                        <th>Стоимость (ISK)</th>
+                    </tr>
+                </thead>
+                <tbody id="project-resources-body"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -549,13 +655,16 @@
     function getSavedStrategy() { const saved = localStorage.getItem('eve_mining_strategy'); if (saved) return JSON.parse(saved); const base = {}; for (const res of Object.keys(defaultPrices)) { base[res] = "buy"; } return base; }
     function getSavedBPSettings() { const saved = localStorage.getItem('eve_bp_settings'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = { bp_cost: d.bp_cost, btn_cost: d.btn_cost }; } return base; }
     function getSavedMESettings() { const saved = localStorage.getItem('eve_me_settings'); return saved ? JSON.parse(saved) : { basic: 0, advanced: 0, expert: 0, station: 11 }; }
+    function getProjectDraft() { const saved = localStorage.getItem('eve_project_draft'); return saved ? JSON.parse(saved) : []; }
+    function getSavedProjectsList() { const saved = localStorage.getItem('eve_saved_projects'); return saved ? JSON.parse(saved) : {}; }
 
-    function initApp() { 
+    function initApp() {
         initPolySelect();
         renderMarketInputs();
         renderStrategyList();
         renderBlueprintsGrid();
         initInteractiveCubes();
+        initProjectsTab();
     }
 
     function renderMarketInputs() {
@@ -685,6 +794,7 @@
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(tabId).classList.add('active'); if(event) event.target.classList.add('active');
         if (tabId === 'analytics-tab') calculateAnalytics();
+        if (tabId === 'projects-tab') calculateProject();
     }
 
     function toggleAccordion() {
@@ -810,6 +920,214 @@
                     <td class="${profitClass}" style="font-weight: bold; font-size: 15px;">${Math.round(item.profit).toLocaleString()} ISK</td>
                 </tr>`;
         });
+    }
+
+    // ==================== ВКЛАДКА "ПРОЕКТЫ" ====================
+
+    function buildPolymerOptionsHTML(selected) {
+        let html = '';
+        for (const name of Object.keys(recipesDatabase)) {
+            html += `<option value="${name}" ${name === selected ? 'selected' : ''}>${name}</option>`;
+        }
+        return html;
+    }
+
+    function addProjectRow(polymer, qty) {
+        const container = document.getElementById('project-rows-container'); if (!container) return;
+        const selectedPoly = polymer || Object.keys(recipesDatabase)[0];
+        const row = document.createElement('div');
+        row.className = 'project-row';
+        row.innerHTML = `
+            <select class="project-item-poly" onchange="syncProjectDraft()">${buildPolymerOptionsHTML(selectedPoly)}</select>
+            <input type="number" class="project-item-qty" min="0" placeholder="Кол-во шт" value="${qty || ''}" oninput="syncProjectDraft()">
+            <button class="btn-row-remove" onclick="removeProjectRow(this)" title="Удалить строку">✕</button>`;
+        container.appendChild(row);
+    }
+
+    function removeProjectRow(btn) {
+        btn.closest('.project-row').remove();
+        syncProjectDraft();
+    }
+
+    function renderProjectRows(items) {
+        const container = document.getElementById('project-rows-container'); if (!container) return;
+        container.innerHTML = '';
+        if (!items || items.length === 0) { addProjectRow(); return; }
+        items.forEach(item => addProjectRow(item.polymer, item.qty));
+    }
+
+    function syncProjectDraft() {
+        const container = document.getElementById('project-rows-container'); if (!container) return;
+        const items = [];
+        container.querySelectorAll('.project-row').forEach(row => {
+            const polymer = row.querySelector('.project-item-poly').value;
+            const qty = parseInt(row.querySelector('.project-item-qty').value) || 0;
+            items.push({ polymer, qty });
+        });
+        localStorage.setItem('eve_project_draft', JSON.stringify(items));
+        calculateProject();
+    }
+
+    function refreshProjectSelect(selectName) {
+        const select = document.getElementById('project-load-select'); if (!select) return;
+        const projects = getSavedProjectsList();
+        select.innerHTML = '<option value="">— Текущий (не сохранён) —</option>';
+        for (const name of Object.keys(projects)) {
+            select.innerHTML += `<option value="${name}" ${name === selectName ? 'selected' : ''}>${name}</option>`;
+        }
+    }
+
+    function saveCurrentProject() {
+        const nameInput = document.getElementById('project-name-input');
+        const name = nameInput.value.trim();
+        if (!name) { alert('Введите название проекта перед сохранением.'); return; }
+        const items = getProjectDraft();
+        const projects = getSavedProjectsList();
+        projects[name] = items;
+        localStorage.setItem('eve_saved_projects', JSON.stringify(projects));
+        refreshProjectSelect(name);
+    }
+
+    function loadSelectedProject(name) {
+        if (!name) { newProject(); return; }
+        const projects = getSavedProjectsList();
+        const items = projects[name] || [];
+        document.getElementById('project-name-input').value = name;
+        renderProjectRows(items);
+        localStorage.setItem('eve_project_draft', JSON.stringify(items));
+        calculateProject();
+    }
+
+    function deleteSelectedProject() {
+        const select = document.getElementById('project-load-select');
+        const name = select.value;
+        if (!name) { alert('Выберите сохранённый проект для удаления.'); return; }
+        if (!confirm(`Удалить проект «${name}»?`)) return;
+        const projects = getSavedProjectsList();
+        delete projects[name];
+        localStorage.setItem('eve_saved_projects', JSON.stringify(projects));
+        refreshProjectSelect();
+        newProject();
+    }
+
+    function newProject() {
+        document.getElementById('project-name-input').value = '';
+        const select = document.getElementById('project-load-select'); if (select) select.value = '';
+        renderProjectRows([]);
+        localStorage.setItem('eve_project_draft', JSON.stringify([]));
+        calculateProject();
+    }
+
+    function calculateProject() {
+        const rowsContainer = document.getElementById('project-rows-container'); if (!rowsContainer) return;
+        const rows = rowsContainer.querySelectorAll('.project-row');
+
+        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices();
+        const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
+        const meInput = document.getElementById('me-modifier');
+        const me = meInput ? (parseFloat(meInput.value) || 150) : 150;
+
+        const aggregatedResources = {};
+        const perPolymerResults = [];
+        let totalRequestedItems = 0, totalBPsAll = 0, totalButtonsCost = 0, totalFixedCostAll = 0, totalMaterialsCostAll = 0, totalMarketBuyCostAll = 0;
+
+        rows.forEach(row => {
+            const polyName = row.querySelector('.project-item-poly').value;
+            const qty = parseInt(row.querySelector('.project-item-qty').value) || 0;
+            const polyData = recipesDatabase[polyName];
+            if (!polyData || qty <= 0) return;
+
+            const bpCount = Math.ceil(qty / 200);
+            let remainingBPs = bpCount; const slots = [];
+            while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
+
+            let itemMaterialsCost = 0;
+            for (const [matName, baseAmount] of Object.entries(polyData.materials)) {
+                let totalAmountRequired = 0;
+                slots.forEach(bpInSlot => {
+                    totalAmountRequired += Math.ceil((baseAmount * me * bpInSlot) / 150);
+                });
+                const isSelfMined = strategy[matName] === "self";
+                const matPrice = isSelfMined ? 0 : (prices[matName] || 0);
+                itemMaterialsCost += totalAmountRequired * matPrice;
+                aggregatedResources[matName] = (aggregatedResources[matName] || 0) + totalAmountRequired;
+            }
+
+            const config = (bpSettings && bpSettings[polyName]) ? bpSettings[polyName] : { bp_cost: polyData.bp_cost, btn_cost: polyData.btn_cost };
+            const bpCost = Number(config.bp_cost) || 0; const btnCost = Number(config.btn_cost) || 0;
+            const itemFixedCost = (bpCost + btnCost) * bpCount;
+            const itemProductionCost = itemMaterialsCost + itemFixedCost;
+
+            const sellPrice = polyPrices[polyName] !== undefined ? polyPrices[polyName] : polyData.market_price;
+            const itemMarketBuyCost = qty * sellPrice;
+            const itemProducedQty = bpCount * 200;
+            const itemDelta = itemMarketBuyCost - itemProductionCost;
+
+            perPolymerResults.push({ name: polyName, requestedQty: qty, bpCount, producedQty: itemProducedQty, productionCost: itemProductionCost, marketBuyCost: itemMarketBuyCost, delta: itemDelta });
+
+            totalRequestedItems += qty; totalBPsAll += bpCount; totalButtonsCost += btnCost * bpCount;
+            totalFixedCostAll += itemFixedCost; totalMaterialsCostAll += itemMaterialsCost; totalMarketBuyCostAll += itemMarketBuyCost;
+        });
+
+        const totalProductionCostAll = totalMaterialsCostAll + totalFixedCostAll;
+        const totalDelta = totalMarketBuyCostAll - totalProductionCostAll;
+
+        document.getElementById('project-total-items').innerText = totalRequestedItems.toLocaleString() + " шт";
+        document.getElementById('project-total-bps').innerText = totalBPsAll.toLocaleString() + " БП";
+        document.getElementById('project-total-buttons').innerText = Math.round(totalButtonsCost).toLocaleString() + " ISK";
+        document.getElementById('project-total-materials').innerText = Math.round(totalMaterialsCostAll).toLocaleString() + " ISK";
+        document.getElementById('project-total-production').innerText = Math.round(totalProductionCostAll).toLocaleString() + " ISK";
+        document.getElementById('project-total-market').innerText = Math.round(totalMarketBuyCostAll).toLocaleString() + " ISK";
+
+        const deltaEl = document.getElementById('project-total-delta');
+        deltaEl.innerText = (totalDelta >= 0 ? "Экономия: " : "Переплата: ") + Math.round(Math.abs(totalDelta)).toLocaleString() + " ISK";
+        deltaEl.className = totalDelta >= 0 ? "stat-val profit-pos" : "stat-val profit-neg";
+
+        const breakdownBody = document.getElementById('project-breakdown-body'); breakdownBody.innerHTML = '';
+        if (perPolymerResults.length === 0) {
+            breakdownBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Добавьте полимеры в проект</td></tr>`;
+        } else {
+            perPolymerResults.forEach(r => {
+                const deltaClass = r.delta >= 0 ? "profit-pos" : "profit-neg";
+                breakdownBody.innerHTML += `
+                    <tr>
+                        <td><b>${r.name}</b></td>
+                        <td>${r.requestedQty.toLocaleString()}</td>
+                        <td>${r.bpCount.toLocaleString()}</td>
+                        <td style="color: var(--text-muted);">${r.producedQty.toLocaleString()}</td>
+                        <td>${Math.round(r.productionCost).toLocaleString()}</td>
+                        <td>${Math.round(r.marketBuyCost).toLocaleString()}</td>
+                        <td class="${deltaClass}" style="font-weight:bold;">${Math.round(r.delta).toLocaleString()}</td>
+                    </tr>`;
+            });
+        }
+
+        const resBody = document.getElementById('project-resources-body'); resBody.innerHTML = '';
+        const sortedResources = Object.entries(aggregatedResources).sort((a, b) => b[1] - a[1]);
+        if (sortedResources.length === 0) {
+            resBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Нет ресурсов для отображения</td></tr>`;
+        } else {
+            sortedResources.forEach(([matName, totalAmount]) => {
+                const isSelfMined = strategy[matName] === "self";
+                const matPrice = isSelfMined ? 0 : (prices[matName] || 0);
+                const totalCost = totalAmount * matPrice;
+                const badge = isSelfMined
+                    ? `<span class="self-mined-badge">ДОБЫЧА</span>`
+                    : `<span class="self-mined-badge" style="background: #05141c; color: var(--accent-color); border: 1px solid var(--accent-color);">ПОКУПКА</span>`;
+                resBody.innerHTML += `
+                    <tr>
+                        <td><b>${matName}</b> ${badge}</td>
+                        <td style="font-size: 15px; color: var(--accent-green); font-weight: bold;">${totalAmount.toLocaleString()}</td>
+                        <td>${isSelfMined ? '<span style="color: var(--accent-green)">0 (Своё)</span>' : Math.round(totalCost).toLocaleString()}</td>
+                    </tr>`;
+            });
+        }
+    }
+
+    function initProjectsTab() {
+        refreshProjectSelect();
+        renderProjectRows(getProjectDraft());
+        calculateProject();
     }
 
     initApp(); loadPolyData();
