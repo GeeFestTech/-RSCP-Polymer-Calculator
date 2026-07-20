@@ -306,6 +306,13 @@
         .btn-accent:hover { background-color: var(--accent-color) !important; color: #06090d !important; }
         .btn-confirm { border-color: var(--accent-green) !important; color: var(--accent-green) !important; }
         .btn-confirm:hover { background-color: var(--accent-green) !important; color: #06090d !important; }
+
+        /* ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА СТРАТЕГИИ ДОБЫЧИ */
+        .mode-switch-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .mode-btn { background-color: #0f172a; border: 1px solid var(--border-color); color: var(--text-muted); padding: 10px 18px; cursor: pointer; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .mode-btn:hover { color: #fff; border-color: var(--accent-color); }
+        .mode-btn.active { background-color: var(--card-header-bg); color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 6px rgba(0, 229, 255, 0.3); }
+        .strategy-row.locked { opacity: 0.55; }
         .self-mined-badge { background: #061f14; color: var(--accent-green); padding: 2px 6px; border: 1px solid #00e676; font-size: 10px; font-weight: bold; }
     </style>
 </head>
@@ -607,6 +614,15 @@
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
                 Ресурсы со статусом <b>«Добуду сам»</b> будут учитываться по цене <b>0 ISK</b>.
             </p>
+
+            <div class="mode-switch-row">
+                <button class="mode-btn" data-mode="own" onclick="setStrategyMode('own')">Моя стратегия добычи</button>
+                <button class="mode-btn" data-mode="all_buy" onclick="setStrategyMode('all_buy')">Оценка: всё покупаю</button>
+            </div>
+            <p id="strategy-mode-note" style="display: none; color: var(--accent-color); font-size: 13px; margin-bottom: 20px;">
+                Режим оценки активен: Калькулятор, Анализ эффективности и Проекты считают так, будто 100% сырья покупается на рынке. Твоя реальная стратегия добычи ниже сохранена и вернётся при переключении обратно.
+            </p>
+
             <div id="strategy-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;"></div>
         </div>
 
@@ -647,6 +663,14 @@
     function getSavedPrices() { const saved = localStorage.getItem('eve_market_prices'); return saved ? JSON.parse(saved) : defaultPrices; }
     function getSavedPolyPrices() { const saved = localStorage.getItem('eve_poly_prices'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = d.market_price; } return base; }
     function getSavedStrategy() { const saved = localStorage.getItem('eve_mining_strategy'); if (saved) return JSON.parse(saved); const base = {}; for (const res of Object.keys(defaultPrices)) { base[res] = "buy"; } return base; }
+    function getStrategyMode() { return localStorage.getItem('eve_strategy_mode') || 'own'; }
+    function getEffectiveStrategy() {
+        if (getStrategyMode() === 'all_buy') {
+            const forced = {}; for (const res of Object.keys(defaultPrices)) forced[res] = "buy";
+            return forced;
+        }
+        return getSavedStrategy();
+    }
     function getSavedBPSettings() { const saved = localStorage.getItem('eve_bp_settings'); if (saved) return JSON.parse(saved); const base = {}; for (const [name, d] of Object.entries(recipesDatabase)) { base[name] = { bp_cost: d.bp_cost, btn_cost: d.btn_cost }; } return base; }
     function getSavedMESettings() { const saved = localStorage.getItem('eve_me_settings'); return saved ? JSON.parse(saved) : { basic: 0, advanced: 0, expert: 0, station: 11 }; }
     function getProjectDraft() { const saved = localStorage.getItem('eve_project_draft'); return saved ? JSON.parse(saved) : []; }
@@ -677,13 +701,30 @@
 
     function renderStrategyList() {
         const container = document.getElementById('strategy-list-container'); container.innerHTML = ''; const strategy = getSavedStrategy();
+        const locked = getStrategyMode() === 'all_buy';
         for (const resName of Object.keys(defaultPrices)) {
-            const isChecked = strategy[resName] === "buy" ? "checked" : "";
+            const isChecked = locked ? true : strategy[resName] === "buy";
             container.innerHTML += `
-                <div class="strategy-row"><span><b>${resName}</b></span>
-                    <label class="toggle-switch"><input type="checkbox" data-res="${resName}" ${isChecked} onchange="syncStrategy(this)"><span class="toggle-slider"><span class="toggle-label-left">ДОБУДУ</span><span class="toggle-label-right">КУПЛЮ</span></span></label>
+                <div class="strategy-row ${locked ? 'locked' : ''}"><span><b>${resName}</b></span>
+                    <label class="toggle-switch"><input type="checkbox" data-res="${resName}" ${isChecked ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="syncStrategy(this)"><span class="toggle-slider"><span class="toggle-label-left">ДОБУДУ</span><span class="toggle-label-right">КУПЛЮ</span></span></label>
                 </div>`;
         }
+        updateStrategyModeButtons();
+    }
+
+    function updateStrategyModeButtons() {
+        const mode = getStrategyMode();
+        document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === mode); });
+        const note = document.getElementById('strategy-mode-note');
+        if (note) note.style.display = mode === 'all_buy' ? 'block' : 'none';
+    }
+
+    function setStrategyMode(mode) {
+        localStorage.setItem('eve_strategy_mode', mode);
+        renderStrategyList();
+        calculate();
+        calculateAnalytics();
+        calculateProject();
     }
 
     function renderBlueprintsGrid() {
@@ -815,7 +856,7 @@
         const polyData = recipesDatabase[polyName]; const meString = document.getElementById('me-modifier').value; const me = parseFloat(meString) || 150; 
         const bpCount = parseInt(document.getElementById('bp-count').value) || 0;
         const sellPrice = parseFloat(document.getElementById('sell-price').value) || 0; const bpCost = parseFloat(document.getElementById('bp-cost').value) || 0; const btnCost = parseFloat(document.getElementById('btn-cost').value) || 0;
-        const prices = getSavedPrices(); const strategy = getSavedStrategy();
+        const prices = getSavedPrices(); const strategy = getEffectiveStrategy();
 
         let remainingBPs = bpCount; const slots = [];
         while (remainingBPs > 0) { if (remainingBPs >= 20) { slots.push(20); remainingBPs -= 20; } else { slots.push(remainingBPs); remainingBPs = 0; } }
@@ -859,7 +900,7 @@
     }
 
     function calculateAnalytics() {
-        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
+        const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices(); const strategy = getEffectiveStrategy(); const bpSettings = getSavedBPSettings();
         
         // Безопасно вытягиваем текущую Material Efficiency
         const meInput = document.getElementById('me-modifier');
@@ -1017,7 +1058,7 @@
         const rows = rowsContainer.querySelectorAll('.project-row');
 
         const prices = getSavedPrices(); const polyPrices = getSavedPolyPrices();
-        const strategy = getSavedStrategy(); const bpSettings = getSavedBPSettings();
+        const strategy = getEffectiveStrategy(); const bpSettings = getSavedBPSettings();
         const meInput = document.getElementById('me-modifier');
         const me = meInput ? (parseFloat(meInput.value) || 150) : 150;
 
