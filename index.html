@@ -369,12 +369,16 @@
                     <div>Суммарно чертежей (БП)</div>
                     <div class="stat-val" id="project-total-bps">0 БП</div>
                 </div>
+                <div class="stat-card">
+                    <div>Стоимость БП</div>
+                    <div class="stat-val" id="project-total-bp-cost">0 ISK</div>
+                </div>
                 <div class="stat-card" style="border-left-color: #ff9100;">
-                    <div>Косты кнопок</div>
+                    <div>Стоимость кнопок</div>
                     <div class="stat-val" id="project-total-buttons" style="color: #ff9100;">0 ISK</div>
                 </div>
                 <div class="stat-card">
-                    <div>Косты сырья</div>
+                    <div>Стоимость сырья</div>
                     <div class="stat-val" id="project-total-materials">0 ISK</div>
                 </div>
                 <div class="stat-card">
@@ -480,7 +484,7 @@
                     <div class="stat-val" id="total-buttons-cost" style="color: #ff9100;">0 ISK</div>
                 </div>
                 <div class="stat-card">
-                    <div>Общие косты сырья</div>
+                    <div>Общая стоимость сырья</div>
                     <div class="stat-val" id="total-cost">0 ISK</div>
                 </div>
                 <div class="stat-card profit">
@@ -523,8 +527,8 @@
                         <th>Полимер</th>
                         <th>Объем (шт)</th>
                         <th>Выручка (ISK)</th>
-                        <th>Косты сырья</th>
-                        <th>Фикс. Косты (БП+Кнопка)</th>
+                        <th>Стоимость сырья</th>
+                        <th>Фикс. стоимость (БП+Кнопка)</th>
                         <th>Всего расходов</th>
                         <th>Чистая прибыль</th>
                     </tr>
@@ -627,7 +631,7 @@
         </div>
 
         <div class="card">
-            <h2>Базовые косты чертежей (ISK на 1 БП)</h2>
+            <h2>Базовая стоимость чертежей (ISK на 1 БП)</h2>
             <div id="blueprints-grid-container" class="grid-blueprints"></div>
         </div>
     </div>
@@ -1064,7 +1068,7 @@
 
         const aggregatedResources = {};
         const perPolymerResults = [];
-        let totalRequestedItems = 0, totalBPsAll = 0, totalButtonsCost = 0, totalFixedCostAll = 0, totalMaterialsCostAll = 0, totalMarketBuyCostAll = 0;
+        let totalRequestedItems = 0, totalBPsAll = 0, totalBPsCost = 0, totalButtonsCost = 0, totalFixedCostAll = 0, totalMaterialsCostAll = 0, totalMarketBuyCostAll = 0;
 
         rows.forEach(row => {
             const polyName = row.querySelector('.project-item-poly').value;
@@ -1100,7 +1104,7 @@
 
             perPolymerResults.push({ name: polyName, requestedQty: qty, bpCount, producedQty: itemProducedQty, productionCost: itemProductionCost, marketBuyCost: itemMarketBuyCost, delta: itemDelta });
 
-            totalRequestedItems += qty; totalBPsAll += bpCount; totalButtonsCost += btnCost * bpCount;
+            totalRequestedItems += qty; totalBPsAll += bpCount; totalBPsCost += bpCost * bpCount; totalButtonsCost += btnCost * bpCount;
             totalFixedCostAll += itemFixedCost; totalMaterialsCostAll += itemMaterialsCost; totalMarketBuyCostAll += itemMarketBuyCost;
         });
 
@@ -1109,6 +1113,7 @@
 
         document.getElementById('project-total-items').innerText = totalRequestedItems.toLocaleString() + " шт";
         document.getElementById('project-total-bps').innerText = totalBPsAll.toLocaleString() + " БП";
+        document.getElementById('project-total-bp-cost').innerText = Math.round(totalBPsCost).toLocaleString() + " ISK";
         document.getElementById('project-total-buttons').innerText = Math.round(totalButtonsCost).toLocaleString() + " ISK";
         document.getElementById('project-total-materials').innerText = Math.round(totalMaterialsCostAll).toLocaleString() + " ISK";
         document.getElementById('project-total-production').innerText = Math.round(totalProductionCostAll).toLocaleString() + " ISK";
