@@ -299,7 +299,7 @@
         .btn-reset:hover { border-color: var(--accent-red); color: #fff; }
 
         /* ВКЛАДКА "ПРОЕКТЫ" */
-        .project-row { display: grid; grid-template-columns: 1fr 160px 40px; gap: 10px; align-items: center; }
+        .project-row { display: grid; grid-template-columns: 30px 1fr 160px 40px; gap: 10px; align-items: center; }
         .btn-row-remove { background: #1a0a0a; border: 1px solid var(--accent-red); color: var(--accent-red); cursor: pointer; font-size: 14px; padding: 8px; }
         .btn-row-remove:hover { background: var(--accent-red); color: #fff; }
         .btn-accent { border-color: var(--accent-color) !important; color: var(--accent-color) !important; }
@@ -314,6 +314,10 @@
         .mode-btn.active { background-color: var(--card-header-bg); color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 6px rgba(0, 229, 255, 0.3); }
         .strategy-row.locked { opacity: 0.55; }
         .self-mined-badge { background: #061f14; color: var(--accent-green); padding: 2px 6px; border: 1px solid #00e676; font-size: 10px; font-weight: bold; }
+
+        /* ИКОНКИ РЕСУРСОВ/ПОЛИМЕРОВ */
+        .item-icon { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; margin-right: 8px; border-radius: 4px; background: #04060a; border: 1px solid var(--border-color); }
+        .item-icon-lg { width: 40px; height: 40px; margin-right: 12px; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -443,7 +447,10 @@
             <div class="input-grid">
                 <div class="form-group">
                     <label for="polymer-select">Выберите полимер</label>
-                    <select id="polymer-select"></select>
+                    <div style="display: flex; align-items: center;">
+                        <span id="polymer-select-icon"></span>
+                        <select id="polymer-select" style="flex: 1;"></select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="me-modifier">Активная Material Efficiency (Из настроек ME)</label>
@@ -646,6 +653,28 @@
 </div>
 
 <script>
+    // Иконки предметов EVE Echoes (icons/<icon_id>.png), сопоставленные по названию ресурса/полимера.
+    const ITEM_ICON_IDS = {
+        "Reactive Gas": "200000018", "Condensates": "200000029", "Noble Gas": "200000019",
+        "Supertensile Plastics": "200000026", "Industrial Fibers": "200000025", "Silicate Glass": "200000032",
+        "PolyAramids": "200000027", "Oxygen Isotopes": "200000016",
+        "Tritanium": "41000000000", "Pyerite": "41000000002", "Mexallon": "41000000003", "Isogen": "41000000004",
+        "Nocxium": "41000000005", "Zydrine": "41000000006", "Megacyte": "41000000007",
+        "Fullerite-C50": "50012100000", "Fullerite-C60": "50012100001", "Fullerite-C70": "50012100002",
+        "Gray Moon Ore": "51021000100", "Brown Moon Ore": "51021000200", "Black Moon Ore": "51021000300", "Motley Moon Ore": "51021000400",
+        "Pink Star Crystal": "51022000100", "Purple Star Crystal": "51022000200", "Blue Star Crystal": "51022000300", "Chromatic Star Crystal": "51022000400",
+        "Fullerides": "41005000200", "Titanium Carbide": "41005000800", "Crystalline Carbonide": "41005000900",
+        "Nanotransistors": "41005001000", "PPD Fullerene Fiber": "41006000001", "Fullero-Ferrocene": "41006000002",
+        "Fullerene Intercalated": "41006000003", "Phenolic Composites": "41005000300", "Sylramic Fibers": "41005000400",
+        "Reinforced Carbon Fiber": "41005000500", "Ferrogel": "41005000700", "Hexite": "41005000100"
+    };
+
+    function itemIconTag(name, sizeClass) {
+        const iconId = ITEM_ICON_IDS[name];
+        if (!iconId) return '';
+        return `<img class="item-icon${sizeClass ? ' ' + sizeClass : ''}" src="icons/${iconId}.png" alt="" loading="lazy">`;
+    }
+
     const defaultPrices = {
         "Reactive Gas": 135, "Condensates": 234, "Noble Gas": 190, "Supertensile Plastics": 640,
         "Industrial Fibers": 1394, "Silicate Glass": 697, "PolyAramids": 220, "Oxygen Isotopes": 3797,
@@ -703,11 +732,11 @@
         const resPrices = getSavedPrices(); const polyPrices = getSavedPolyPrices();
 
         for (const [res, price] of Object.entries(resPrices)) {
-            const block = `<div class="resource-row"><label>${res}</label><input type="number" class="market-input" data-res="${res}" value="${price}" oninput="syncResourcePrice(this)"></div>`;
+            const block = `<div class="resource-row"><label>${itemIconTag(res)}${res}</label><input type="number" class="market-input" data-res="${res}" value="${price}" oninput="syncResourcePrice(this)"></div>`;
             resContainer.innerHTML += block; accGrid.innerHTML += block;
         }
         for (const [polyName, price] of Object.entries(polyPrices)) {
-            polyContainer.innerHTML += `<div class="resource-row"><label><b>${polyName}</b></label><input type="number" class="poly-input" data-poly="${polyName}" value="${price}" oninput="syncPolyPrice(this)"></div>`;
+            polyContainer.innerHTML += `<div class="resource-row"><label>${itemIconTag(polyName)}<b>${polyName}</b></label><input type="number" class="poly-input" data-poly="${polyName}" value="${price}" oninput="syncPolyPrice(this)"></div>`;
         }
     }
 
@@ -717,7 +746,7 @@
         for (const resName of Object.keys(defaultPrices)) {
             const isChecked = locked ? true : strategy[resName] === "buy";
             container.innerHTML += `
-                <div class="strategy-row ${locked ? 'locked' : ''}"><span><b>${resName}</b></span>
+                <div class="strategy-row ${locked ? 'locked' : ''}"><span>${itemIconTag(resName)}<b>${resName}</b></span>
                     <label class="toggle-switch"><input type="checkbox" data-res="${resName}" ${isChecked ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="syncStrategy(this)"><span class="toggle-slider"><span class="toggle-label-left">ДОБУДУ</span><span class="toggle-label-right">КУПЛЮ</span></span></label>
                 </div>`;
         }
@@ -744,7 +773,7 @@
         for (const [polyName, config] of Object.entries(bpSettings)) {
             container.innerHTML += `
                 <div class="bp-edit-card">
-                    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; color: var(--accent-color);">${polyName}</h3>
+                    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; color: var(--accent-color); display: flex; align-items: center;">${itemIconTag(polyName)}${polyName}</h3>
                     <div class="form-group"><label>Цена чертежа (ISK)</label><input type="number" class="bp-cost-input" data-poly="${polyName}" value="${config.bp_cost}" oninput="syncBPConfig(this, 'bp_cost')"></div>
                     <div class="form-group"><label>Цена запуска / Кнопка (ISK)</label><input type="number" class="bp-btn-input" data-poly="${polyName}" value="${config.btn_cost}" oninput="syncBPConfig(this, 'btn_cost')"></div>
                 </div>`;
@@ -936,6 +965,7 @@
     function loadPolyData() {
         const polyName = document.getElementById('polymer-select').value; if (!polyName) return;
         const polyData = recipesDatabase[polyName]; const polyPrices = getSavedPolyPrices(); const bpSettings = getSavedBPSettings();
+        const iconEl = document.getElementById('polymer-select-icon'); if (iconEl) iconEl.innerHTML = itemIconTag(polyName, 'item-icon-lg');
         document.getElementById('sell-price').value = polyPrices[polyName] || polyData.market_price;
         document.getElementById('bp-cost').value = bpSettings[polyName].bp_cost; document.getElementById('btn-cost').value = bpSettings[polyName].btn_cost;
         calculate();
@@ -970,7 +1000,7 @@
 
             tableBody.innerHTML += `
                 <tr>
-                    <td><b>${matName}</b> ${badge}</td>
+                    <td>${itemIconTag(matName)}<b>${matName}</b> ${badge}</td>
                     <td>${baseAmount.toLocaleString()}</td>
                     <td style="color: var(--accent-color);">${amountPerBPWithME.toFixed(4)}</td>
                     <td style="font-size: 15px; color: var(--accent-green); font-weight: bold;">${totalAmountRequired.toLocaleString()}</td>
@@ -1036,7 +1066,7 @@
             const profitClass = item.profit >= 0 ? "profit-pos" : "profit-neg";
             tbody.innerHTML += `
                 <tr>
-                    <td><b>${item.name}</b></td>
+                    <td>${itemIconTag(item.name)}<b>${item.name}</b></td>
                     <td style="color: var(--text-muted);">${item.produced.toLocaleString()}</td>
                     <td>${Math.round(item.revenue).toLocaleString()}</td>
                     <td>${Math.round(item.matsCost).toLocaleString()}</td>
@@ -1063,10 +1093,16 @@
         const row = document.createElement('div');
         row.className = 'project-row';
         row.innerHTML = `
-            <select class="project-item-poly" onchange="syncProjectDraft()">${buildPolymerOptionsHTML(selectedPoly)}</select>
+            <span class="project-item-icon">${itemIconTag(selectedPoly)}</span>
+            <select class="project-item-poly" onchange="updateProjectRowIcon(this); syncProjectDraft()">${buildPolymerOptionsHTML(selectedPoly)}</select>
             <input type="number" class="project-item-qty" min="0" placeholder="Кол-во шт" value="${qty || ''}" oninput="syncProjectDraft()">
             <button class="btn-row-remove" onclick="removeProjectRow(this)" title="Удалить строку">✕</button>`;
         container.appendChild(row);
+    }
+
+    function updateProjectRowIcon(selectEl) {
+        const iconSpan = selectEl.closest('.project-row').querySelector('.project-item-icon');
+        if (iconSpan) iconSpan.innerHTML = itemIconTag(selectEl.value);
     }
 
     function removeProjectRow(btn) {
@@ -1217,7 +1253,7 @@
                 const deltaClass = r.delta >= 0 ? "profit-pos" : "profit-neg";
                 breakdownBody.innerHTML += `
                     <tr>
-                        <td><b>${r.name}</b></td>
+                        <td>${itemIconTag(r.name)}<b>${r.name}</b></td>
                         <td>${r.requestedQty.toLocaleString()}</td>
                         <td>${r.bpCount.toLocaleString()}</td>
                         <td style="color: var(--text-muted);">${r.producedQty.toLocaleString()}</td>
@@ -1242,7 +1278,7 @@
                     : `<span class="self-mined-badge" style="background: #05141c; color: var(--accent-color); border: 1px solid var(--accent-color);">ПОКУПКА</span>`;
                 resBody.innerHTML += `
                     <tr>
-                        <td><b>${matName}</b> ${badge}</td>
+                        <td>${itemIconTag(matName)}<b>${matName}</b> ${badge}</td>
                         <td style="font-size: 15px; color: var(--accent-green); font-weight: bold;">${totalAmount.toLocaleString()}</td>
                         <td>${isSelfMined ? '<span style="color: var(--accent-green)">0 (Своё)</span>' : Math.round(totalCost).toLocaleString()}</td>
                     </tr>`;
